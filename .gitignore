@@ -1,0 +1,6 @@
+bin/
+obj/
+.vs/
+*.user
+Content/bin/
+Content/obj/
