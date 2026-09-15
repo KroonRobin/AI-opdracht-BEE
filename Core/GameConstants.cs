@@ -15,8 +15,10 @@ public static class GameConstants
 
     // UI
     public const int HealthBarWidth = 220;
-    public const int HealthBarHeight = 28;
-    public const int HealthBarPadding = 16;   // distance from screen edges
+    public const int HealthBarHeight = 25;         
+    public const int HealthBarPadding = 16;
+    public const int HealthBarCornerRadius = 8;
+    public const int HealthBarOutlineThickness = 3;
 
     // Enemy
     public const float EnemySpeed = 90f;
@@ -32,7 +34,7 @@ public static class GameConstants
     public const float EnemyKnockbackSpeed = 350f;
     public const float EnemyKnockbackDuration = 0.25f;  // seconds spent flying backward
     public const float EnemyAttackCooldown = 0.6f;      // seconds before it can hit you again after recovering
-    public const int EnemyContactDamage = 1;
+    public const int EnemyContactDamage = 8;
 
     // Bullet
     public const float BulletSpeed = 800f;
