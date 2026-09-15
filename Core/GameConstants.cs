@@ -19,6 +19,12 @@ public static class GameConstants
     public const int EnemyHeight = 32;
     public const int EnemyHitboxRadius = 11;
 
+    // Enemy behavior
+    public const float EnemyKnockbackSpeed = 350f;
+    public const float EnemyKnockbackDuration = 0.25f;  // seconds spent flying backward
+    public const float EnemyAttackCooldown = 0.6f;      // seconds before it can hit you again after recovering
+    public const int EnemyContactDamage = 1;
+
     // Bullet
     public const float BulletSpeed = 500f;
     public const int BulletRadius = 4;

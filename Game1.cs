@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using AI_opdracht_BEE.Core;
 using AI_opdracht_BEE.Entities;
+using AI_opdracht_BEE.Systems;
 
 namespace AI_opdracht_BEE;
 
@@ -18,6 +19,9 @@ public class Game1 : Game
     private List<Bullet> _bullets = new();
     private MouseState _previousMouseState;
     private MouseState _currentMouseState;
+
+    private List<Enemy> _enemies = new();
+    private EnemySpawner _enemySpawner;
 
     private float _fireCooldown = 0f;
 
@@ -35,6 +39,8 @@ public class Game1 : Game
         _graphics.ApplyChanges();
 
         _player = new Player(new Vector2(GameConstants.RoomWidth / 2f, GameConstants.RoomHeight / 2f));
+
+        _enemySpawner = new EnemySpawner();
 
         base.Initialize();
     }
@@ -82,6 +88,19 @@ public class Game1 : Game
         _bullets.RemoveAll(b => !b.IsActive);
         // --- end mouse aim/shoot ---
 
+        _enemySpawner.Update(gameTime, _enemies);
+
+        foreach (var enemy in _enemies)
+        {
+            enemy.Update(gameTime, _player.Position);
+
+            if (enemy.CanAttack && Vector2.Distance(enemy.HitboxCenter, _player.HitboxCenter) < enemy.HitboxRadius + _player.HitboxRadius)
+            {
+                _player.TakeDamage(GameConstants.EnemyContactDamage);
+                enemy.OnHitPlayer(_player.Position);
+            }
+        }
+
         base.Update(gameTime);
     }
 
@@ -95,6 +114,9 @@ public class Game1 : Game
 
         foreach (var bullet in _bullets)
             bullet.Draw(_spriteBatch, _pixel);
+
+        foreach (var enemy in _enemies)
+            enemy.Draw(_spriteBatch, _pixel);
 
         _spriteBatch.End();
 
