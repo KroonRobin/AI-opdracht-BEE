@@ -1,6 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using AI_opdracht_BEE.Core;
+using AI_opdracht_BEE.Entities;
 
 namespace AI_opdracht_BEE;
 
@@ -8,6 +11,15 @@ public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
+
+    private Texture2D _pixel;
+    private Player _player;
+
+    private List<Bullet> _bullets = new();
+    private MouseState _previousMouseState;
+    private MouseState _currentMouseState;
+
+    private float _fireCooldown = 0f;
 
     public Game1()
     {
@@ -18,7 +30,11 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
+        _graphics.PreferredBackBufferWidth = GameConstants.RoomWidth;
+        _graphics.PreferredBackBufferHeight = GameConstants.RoomHeight;
+        _graphics.ApplyChanges();
+
+        _player = new Player(new Vector2(GameConstants.RoomWidth / 2f, GameConstants.RoomHeight / 2f));
 
         base.Initialize();
     }
@@ -27,24 +43,60 @@ public class Game1 : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        // TODO: use this.Content to load your game content here
+        _pixel = new Texture2D(GraphicsDevice, 1, 1);
+        _pixel.SetData(new[] { Color.White });
     }
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
+            Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-        // TODO: Add your update logic here
+        _player.Update(gameTime, Keyboard.GetState());
+
+        // --- Mouse aim/shoot ---
+        _currentMouseState = Mouse.GetState();
+
+        _fireCooldown -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        bool wantsToShoot = _currentMouseState.LeftButton == ButtonState.Pressed;
+
+        if (wantsToShoot && _fireCooldown <= 0f)
+        {
+            Vector2 mousePosition = new Vector2(_currentMouseState.X, _currentMouseState.Y);
+            Vector2 shootOrigin = _player.Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
+            Vector2 direction = mousePosition - shootOrigin;
+
+            if (direction != Vector2.Zero)
+            {
+                direction.Normalize();
+                _bullets.Add(new Bullet(shootOrigin, direction));
+                _fireCooldown = GameConstants.BaseFireInterval;
+            }
+        }
+
+        foreach (var bullet in _bullets)
+            bullet.Update(gameTime);
+
+        _bullets.RemoveAll(b => !b.IsActive);
+        // --- end mouse aim/shoot ---
 
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
+        GraphicsDevice.Clear(new Color(62, 48, 40));
 
-        // TODO: Add your drawing code here
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+        _player.Draw(_spriteBatch, _pixel);
+
+        foreach (var bullet in _bullets)
+            bullet.Draw(_spriteBatch, _pixel);
+
+        _spriteBatch.End();
 
         base.Draw(gameTime);
     }
