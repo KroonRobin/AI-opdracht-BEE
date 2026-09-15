@@ -41,4 +41,9 @@ public class Bullet
 
         spriteBatch.Draw(pixel, rect, Color.Gold);
     }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+    }
 }

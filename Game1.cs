@@ -25,6 +25,8 @@ public class Game1 : Game
 
     private float _fireCooldown = 0f;
 
+    private int _score;
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -85,21 +87,18 @@ public class Game1 : Game
         foreach (var bullet in _bullets)
             bullet.Update(gameTime);
 
-        _bullets.RemoveAll(b => !b.IsActive);
         // --- end mouse aim/shoot ---
 
         _enemySpawner.Update(gameTime, _enemies);
 
         foreach (var enemy in _enemies)
-        {
             enemy.Update(gameTime, _player.Position);
 
-            if (enemy.CanAttack && Vector2.Distance(enemy.HitboxCenter, _player.HitboxCenter) < enemy.HitboxRadius + _player.HitboxRadius)
-            {
-                _player.TakeDamage(GameConstants.EnemyContactDamage);
-                enemy.OnHitPlayer(_player.Position);
-            }
-        }
+        _score += CollisionManager.CheckBulletsVsEnemies(_bullets, _enemies);
+        CollisionManager.CheckEnemiesVsPlayer(_enemies, _player);
+
+        _bullets.RemoveAll(b => !b.IsActive);
+        _enemies.RemoveAll(e => !e.IsAlive);
 
         base.Update(gameTime);
     }

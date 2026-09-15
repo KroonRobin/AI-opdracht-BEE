@@ -11,6 +11,9 @@ public class Enemy
     public Vector2 Position;
     public EnemyState State { get; private set; } = EnemyState.Chasing;
 
+    public int Health { get; private set; } = GameConstants.EnemyMaxHealth;
+    public bool IsAlive => Health > 0;
+
     private Vector2 _knockbackVelocity;
     private float _knockbackTimer;
     private float _attackCooldownTimer;
@@ -76,7 +79,12 @@ public class Enemy
         State = EnemyState.Knockback;
     }
 
-    public Vector2 HitboxCenter => Position;
+    public void TakeDamage(int amount)
+    {
+        Health = System.Math.Max(0, Health - amount);
+    }
+
+    public Vector2 HitboxCenter => Position - new Vector2(0, GameConstants.EnemyHeight / 2f);
     public float HitboxRadius => GameConstants.EnemyHitboxRadius;
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel)

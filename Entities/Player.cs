@@ -69,7 +69,7 @@ public class Player
 
     // The collision circle sits at the feet, not the whole sprite.
     // In 3/4 view your head shouldn't collide with things beside you.
-    public Vector2 HitboxCenter => Position;
+    public Vector2 HitboxCenter => Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
     public float HitboxRadius => GameConstants.PlayerHitboxRadius;
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel)

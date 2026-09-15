@@ -11,13 +11,22 @@ public static class GameConstants
     public const int PlayerWidth = 24;
     public const int PlayerHeight = 40;         // taller than wide, like a 3/4 character sprite
     public const int PlayerHitboxRadius = 10;   // collision circle at the feet
-    public const int PlayerMaxHealth = 5;
+    public const int PlayerMaxHealth = 100;   // was 5 — update the existing line
+
+    // UI
+    public const int HealthBarWidth = 220;
+    public const int HealthBarHeight = 28;
+    public const int HealthBarPadding = 16;   // distance from screen edges
 
     // Enemy
     public const float EnemySpeed = 90f;
     public const int EnemyWidth = 22;
     public const int EnemyHeight = 32;
     public const int EnemyHitboxRadius = 11;
+
+    // Enemy health
+    public const int EnemyMaxHealth = 1;
+    public const int BulletDamage = 1;
 
     // Enemy behavior
     public const float EnemyKnockbackSpeed = 350f;
@@ -26,7 +35,7 @@ public static class GameConstants
     public const int EnemyContactDamage = 1;
 
     // Bullet
-    public const float BulletSpeed = 500f;
+    public const float BulletSpeed = 800f;
     public const int BulletRadius = 4;
 
     // Shooting
