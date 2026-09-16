@@ -10,22 +10,55 @@ public class Pickup
     public UpgradeType Type { get; }
     public bool IsActive { get; private set; } = true;
 
+    private float _lifeTimer;
+
     public Pickup(Vector2 position, UpgradeType type)
     {
         Position = position;
         Type = type;
+        _lifeTimer = GameConstants.PickupLifetime;
     }
 
     public Vector2 HitboxCenter => Position;
     public float HitboxRadius => GameConstants.PickupHitboxRadius;
+
+    public void Update(GameTime gameTime)
+    {
+        float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        _lifeTimer -= delta;
+
+        if (_lifeTimer <= 0f)
+            IsActive = false;
+    }
 
     public void Collect()
     {
         IsActive = false;
     }
 
+    public bool IsVisible
+    {
+        get
+        {
+            if (_lifeTimer > GameConstants.PickupBlinkDuration)
+                return true; // still in the solid, non-blinking phase
+
+            float timeIntoBlinkWindow = GameConstants.PickupBlinkDuration - _lifeTimer;
+            int totalIntervals = GameConstants.PickupBlinkCount * 2; // each blink = one "on" + one "off"
+            float intervalLength = GameConstants.PickupBlinkDuration / totalIntervals;
+
+            int currentInterval = (int)(timeIntoBlinkWindow / intervalLength);
+
+            // Even intervals = visible ("on"), odd intervals = hidden ("off")
+            return currentInterval % 2 == 0;
+        }
+    }
+
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font)
     {
+        if (!IsVisible)
+            return;
+
         var rect = new Rectangle(
             (int)(Position.X - GameConstants.PickupSize / 2f),
             (int)(Position.Y - GameConstants.PickupSize / 2f),

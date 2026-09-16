@@ -19,7 +19,7 @@ public static class GameConstants
 
     // UI
     public const int HealthBarWidth = 220;
-    public const int HealthBarHeight = 25;         
+    public const int HealthBarHeight = 25;
     public const int HealthBarPadding = 16;
     public const int HealthBarCornerRadius = 8;
     public const int HealthBarOutlineThickness = 3;
@@ -48,7 +48,7 @@ public static class GameConstants
     public const int RangedEnemyBaseHealth = 6;
     public const int RangedEnemyBaseContactDamage = 6;
     public const int RangedEnemyBaseBulletDamage = 12;
-    public const float RangedEnemyEngageRange = RoomWidth / 3f;   
+    public const float RangedEnemyEngageRange = RoomWidth / 3f;
     public const float RangedEnemyAttackCooldown = 1.2f;
     public const float RangedEnemySpawnChance = 0.3f;              // 30% of spawns are ranged
     public const int RangedEnemyUnlockRound = 5;
@@ -95,4 +95,10 @@ public static class GameConstants
     public const float DamageDropWeight = 1.0f;
     public const float FireRateDropWeight = 1.0f;
     public const float MoveSpeedDropWeight = 1.0f;
-    public const float MaxHealthDropWeight = 0.3f;   
+    public const float MaxHealthDropWeight = 0.3f;
+
+    // Pickup lifetime
+    public const float PickupLifetime = 8f;        // total seconds before disappearing
+    public const float PickupBlinkDuration = 3f;   // blinking starts this many seconds before expiry
+    public const int PickupBlinkCount = 3;         // number of on/off blinks during that window
+}

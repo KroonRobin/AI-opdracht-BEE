@@ -167,6 +167,9 @@ public class Game1 : Game
             bullet.Update(gameTime);
         // --- end mouse aim/shoot ---
 
+        foreach (var pickup in _pickups)
+            pickup.Update(gameTime);
+
         _levelManager.Update(gameTime, _enemies, _enemySpawner);
 
         if (_levelManager.CurrentLevel != _lastTrackedLevel)
@@ -374,7 +377,10 @@ public class Game1 : Game
             outerRect.Y,
             (int)(outerRect.Width * healthPercent),
             outerRect.Height);
-aaaaa
+
+        _spriteBatch.Draw(_pixel, fillRect, healthBarColor);   
+        _spriteBatch.Draw(_healthBarBorder, borderRect, Color.White);
+
         string healthText = $"{_player.Health} HP";
         Vector2 textSize = _font.MeasureString(healthText);
         Vector2 textPosition = new Vector2(
