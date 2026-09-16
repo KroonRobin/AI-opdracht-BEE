@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -43,6 +44,8 @@ public class Game1 : Game
 
     private int _upgradesDroppedThisRound;
     private int _lastTrackedLevel;
+
+    private Dictionary<UpgradeType, int> _dropCounts = new();
 
     public Game1()
     {
@@ -237,11 +240,40 @@ public class Game1 : Game
         if (_random.NextDouble() > GameConstants.PickupDropChance)
             return;
 
-        var allTypes = Enum.GetValues<UpgradeType>();
-        var chosenType = allTypes[_random.Next(allTypes.Length)];
+        var chosenType = PickWeightedUpgradeType();
 
         _pickups.Add(new Pickup(position, chosenType));
         _upgradesDroppedThisRound++;
+
+        // --- debug tracking ---
+        if (!_dropCounts.ContainsKey(chosenType))
+            _dropCounts[chosenType] = 0;
+        _dropCounts[chosenType]++;
+        // --- end debug tracking ---
+    }
+
+    private UpgradeType PickWeightedUpgradeType()
+    {
+        var weightedOptions = new (UpgradeType type, float weight)[]
+        {
+        (UpgradeType.Damage, GameConstants.DamageDropWeight),
+        (UpgradeType.FireRate, GameConstants.FireRateDropWeight),
+        (UpgradeType.MoveSpeed, GameConstants.MoveSpeedDropWeight),
+        (UpgradeType.MaxHealth, GameConstants.MaxHealthDropWeight),
+        };
+
+        float totalWeight = weightedOptions.Sum(o => o.weight);
+        float roll = (float)(_random.NextDouble() * totalWeight);
+
+        float cumulative = 0f;
+        foreach (var (type, weight) in weightedOptions)
+        {
+            cumulative += weight;
+            if (roll <= cumulative)
+                return type;
+        }
+
+        return weightedOptions[^1].type; // fallback, should never actually be reached
     }
 
     private void ApplyUpgrade(UpgradeType type)
@@ -342,11 +374,7 @@ public class Game1 : Game
             outerRect.Y,
             (int)(outerRect.Width * healthPercent),
             outerRect.Height);
-
-        _spriteBatch.Draw(_pixel, fillRect, healthBarColor);
-
-        _spriteBatch.Draw(_healthBarBorder, borderRect, Color.White);
-
+aaaaa
         string healthText = $"{_player.Health} HP";
         Vector2 textSize = _font.MeasureString(healthText);
         Vector2 textPosition = new Vector2(
@@ -362,6 +390,11 @@ public class Game1 : Game
             outerRect.Y + outerRect.Height / 2f - scoreSize.Y / 2f);
 
         _spriteBatch.DrawString(_font, scoreText, scorePosition, Color.White);
+
+        // --- debug: pickup drop counts ---
+        string dropDebug = string.Join(" | ", _dropCounts.Select(kv => $"{kv.Key}: {kv.Value}"));
+        _spriteBatch.DrawString(_font, dropDebug, new Vector2(16, 60), Color.White);
+        // --- end debug ---
     }
 
     private void DrawGameOverScreen()

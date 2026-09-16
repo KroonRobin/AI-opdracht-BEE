@@ -45,9 +45,9 @@ public static class GameConstants
     public const int RangedEnemyWidth = 22;
     public const int RangedEnemyHeight = 32;
     public const int RangedEnemyHitboxRadius = 11;
-    public const int RangedEnemyBaseHealth = 10;
-    public const int RangedEnemyBaseContactDamage = 5;
-    public const int RangedEnemyBaseBulletDamage = 6;
+    public const int RangedEnemyBaseHealth = 6;
+    public const int RangedEnemyBaseContactDamage = 6;
+    public const int RangedEnemyBaseBulletDamage = 12;
     public const float RangedEnemyEngageRange = RoomWidth / 3f;   
     public const float RangedEnemyAttackCooldown = 1.2f;
     public const float RangedEnemySpawnChance = 0.3f;              // 30% of spawns are ranged
@@ -90,4 +90,9 @@ public static class GameConstants
     public const float MoveSpeedUpgradeAmount = 25f;
     public const int MaxHealthUpgradeAmount = 25;
     public const int MaxUpgradesPerRound = 2;
-}
+
+    // Upgrade drop weights — higher number = more likely. Don't need to sum to any particular total.
+    public const float DamageDropWeight = 1.0f;
+    public const float FireRateDropWeight = 1.0f;
+    public const float MoveSpeedDropWeight = 1.0f;
+    public const float MaxHealthDropWeight = 0.3f;   
