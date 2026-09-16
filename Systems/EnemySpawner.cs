@@ -12,17 +12,45 @@ public class EnemySpawner
     private float _timer;
     private float _currentInterval;
 
-    public EnemySpawner()
+    private int _enemiesToSpawn;
+    private int _enemiesSpawned;
+
+    private int _meleeHealth;
+    private int _meleeDamage;
+    private int _rangedHealth;
+    private int _rangedContactDamage;
+    private int _rangedBulletDamage;
+
+    private int _currentLevelIndex;
+
+    public bool IsDoneSpawning => _enemiesSpawned >= _enemiesToSpawn;
+
+    public void StartLevel(int enemyCount, int levelIndex)
     {
+        _enemiesToSpawn = enemyCount;
+        _enemiesSpawned = 0;
         _currentInterval = GameConstants.InitialSpawnInterval;
         _timer = _currentInterval;
+        _currentLevelIndex = levelIndex;
+
+        double healthGrowth = Math.Pow(1 + GameConstants.EnemyHealthGrowthPerLevel, levelIndex);
+        double damageGrowth = Math.Pow(1 + GameConstants.EnemyDamageGrowthPerLevel, levelIndex);
+
+        _meleeHealth = (int)Math.Round(GameConstants.EnemyMaxHealth * healthGrowth);
+        _meleeDamage = (int)Math.Round(GameConstants.EnemyContactDamage * damageGrowth);
+
+        _rangedHealth = (int)Math.Round(GameConstants.RangedEnemyBaseHealth * healthGrowth);
+        _rangedContactDamage = (int)Math.Round(GameConstants.RangedEnemyBaseContactDamage * damageGrowth);
+        _rangedBulletDamage = (int)Math.Round(GameConstants.RangedEnemyBaseBulletDamage * damageGrowth);
     }
 
     public void Update(GameTime gameTime, List<Enemy> enemies)
     {
+        if (IsDoneSpawning)
+            return;
+
         float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        // Difficulty ramp: interval slowly shrinks toward the minimum over time.
         _currentInterval = Math.Max(
             GameConstants.MinimumSpawnInterval,
             _currentInterval - GameConstants.SpawnRampPerSecond * delta);
@@ -31,14 +59,28 @@ public class EnemySpawner
 
         if (_timer <= 0f)
         {
-            enemies.Add(new Enemy(GetRandomEdgePosition()));
+            enemies.Add(CreateNextEnemy());
+            _enemiesSpawned++;
             _timer = _currentInterval;
         }
     }
 
+    private Enemy CreateNextEnemy()
+    {
+        Vector2 position = GetRandomEdgePosition();
+
+        int currentRound = _currentLevelIndex + 1;
+        bool rangedUnlocked = currentRound >= GameConstants.RangedEnemyUnlockRound;
+        bool spawnRanged = rangedUnlocked && _random.NextDouble() < GameConstants.RangedEnemySpawnChance;
+
+        return spawnRanged
+            ? Enemy.CreateRanged(position, _rangedHealth, _rangedContactDamage, _rangedBulletDamage)
+            : Enemy.CreateMelee(position, _meleeHealth, _meleeDamage);
+    }
+
     private Vector2 GetRandomEdgePosition()
     {
-        int edge = _random.Next(4); // 0=top, 1=bottom, 2=left, 3=right
+        int edge = _random.Next(4);
 
         return edge switch
         {

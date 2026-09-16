@@ -15,6 +15,8 @@ public class Player
     public Facing FacingDirection { get; private set; } = Facing.Down;
     public int Health { get; private set; } = GameConstants.PlayerMaxHealth;
     public bool IsAlive => Health > 0;
+    public float MoveSpeed { get; private set; } = GameConstants.PlayerSpeed;
+    public int MaxHealth { get; private set; } = GameConstants.PlayerMaxHealth;
 
     public Player(Vector2 startPosition)
     {
@@ -37,7 +39,7 @@ public class Player
             // Normalize so diagonal movement isn't faster than straight movement.
             // Without this, holding W+D gives you ~1.41x speed.
             input.Normalize();
-            Position += input * GameConstants.PlayerSpeed * delta;
+            Position += input * MoveSpeed * delta;
 
             UpdateFacing(input);
         }
@@ -65,6 +67,17 @@ public class Player
     public void TakeDamage(int amount)
     {
         Health = System.Math.Max(0, Health - amount);
+    }
+
+    public void IncreaseMoveSpeed(float amount)
+    {
+        MoveSpeed += amount;
+    }
+
+    public void IncreaseMaxHealth(int amount)
+    {
+        MaxHealth += amount;
+        Health += amount;  // also heals by the same amount, so the pickup feels immediately rewarding
     }
 
     // The collision circle sits at the feet, not the whole sprite.

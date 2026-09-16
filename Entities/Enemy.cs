@@ -4,55 +4,136 @@ using AI_opdracht_BEE.Core;
 
 namespace AI_opdracht_BEE.Entities;
 
-public enum EnemyState { Chasing, Knockback }
+public enum EnemyType { Melee, Ranged }
+public enum EnemyState { Chasing, Attacking, Knockback }
 
 public class Enemy
 {
     public Vector2 Position;
+    public EnemyType Type { get; }
     public EnemyState State { get; private set; } = EnemyState.Chasing;
 
-    public int Health { get; private set; } = GameConstants.EnemyMaxHealth;
+    public int Health { get; private set; }
+    public int ContactDamage { get; }
+    public int BulletDamage { get; }
     public bool IsAlive => Health > 0;
+    public bool WantsToFire { get; private set; }
+
+    private readonly float _moveSpeed;
+    private readonly int _width;
+    private readonly int _height;
+    private readonly float _hitboxRadius;
+    private readonly float _engageRange;
+    private readonly float _attackCooldownDuration;
+    private float _attackTimer;
 
     private Vector2 _knockbackVelocity;
     private float _knockbackTimer;
-    private float _attackCooldownTimer;
+    private float _contactCooldownTimer;
 
-    public Enemy(Vector2 startPosition)
+    private Enemy(
+        EnemyType type, Vector2 startPosition, int maxHealth, int contactDamage,
+        float moveSpeed, int width, int height, float hitboxRadius,
+        float engageRange, float attackCooldownDuration, int bulletDamage)
     {
+        Type = type;
         Position = startPosition;
+        Health = maxHealth;
+        ContactDamage = contactDamage;
+        _moveSpeed = moveSpeed;
+        _width = width;
+        _height = height;
+        _hitboxRadius = hitboxRadius;
+        _engageRange = engageRange;
+        _attackCooldownDuration = attackCooldownDuration;
+        _attackTimer = attackCooldownDuration;
+        BulletDamage = bulletDamage;
     }
 
-    // True only when the enemy is actually able to deal damage right now.
-    public bool CanAttack => State == EnemyState.Chasing && _attackCooldownTimer <= 0f;
+    public static Enemy CreateMelee(Vector2 startPosition, int maxHealth, int contactDamage)
+    {
+        return new Enemy(
+            EnemyType.Melee, startPosition, maxHealth, contactDamage,
+            GameConstants.EnemySpeed, GameConstants.EnemyWidth, GameConstants.EnemyHeight,
+            GameConstants.EnemyHitboxRadius, engageRange: 0f, attackCooldownDuration: 0f, bulletDamage: 0);
+    }
+
+    public static Enemy CreateRanged(Vector2 startPosition, int maxHealth, int contactDamage, int bulletDamage)
+    {
+        return new Enemy(
+            EnemyType.Ranged, startPosition, maxHealth, contactDamage,
+            GameConstants.RangedEnemySpeed, GameConstants.RangedEnemyWidth, GameConstants.RangedEnemyHeight,
+            GameConstants.RangedEnemyHitboxRadius, GameConstants.RangedEnemyEngageRange,
+            GameConstants.RangedEnemyAttackCooldown, bulletDamage);
+    }
+
+    public bool CanAttack => State != EnemyState.Knockback && _contactCooldownTimer <= 0f;
+    public Vector2 ShootOrigin => Position - new Vector2(0, _height / 2f);
 
     public void Update(GameTime gameTime, Vector2 playerPosition)
     {
         float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        if (_attackCooldownTimer > 0f)
-            _attackCooldownTimer -= delta;
+        if (_contactCooldownTimer > 0f)
+            _contactCooldownTimer -= delta;
 
         switch (State)
         {
             case EnemyState.Chasing:
-                ChasePlayer(playerPosition, delta);
+                ChaseOrEngage(playerPosition, delta);
                 break;
-
+            case EnemyState.Attacking:
+                HandleAttacking(playerPosition, delta);
+                break;
             case EnemyState.Knockback:
                 ApplyKnockback(delta);
                 break;
         }
     }
 
-    private void ChasePlayer(Vector2 playerPosition, float delta)
+    private void ChaseOrEngage(Vector2 playerPosition, float delta)
     {
+        bool insideRoom =
+            Position.X >= 0 && Position.X <= GameConstants.RoomWidth &&
+            Position.Y >= 0 && Position.Y <= GameConstants.RoomHeight;
+
+        float distance = Vector2.Distance(Position, playerPosition);
+
+        if (Type == EnemyType.Ranged && insideRoom && distance <= _engageRange)
+        {
+            State = EnemyState.Attacking;
+            return;
+        }
+
         Vector2 direction = playerPosition - Position;
         if (direction != Vector2.Zero)
         {
             direction.Normalize();
-            Position += direction * GameConstants.EnemySpeed * delta;
+            Position += direction * _moveSpeed * delta;
         }
+    }
+
+    private void HandleAttacking(Vector2 playerPosition, float delta)
+    {
+        float distance = Vector2.Distance(Position, playerPosition);
+
+        if (distance > _engageRange)
+        {
+            State = EnemyState.Chasing;
+            return;
+        }
+
+        _attackTimer -= delta;
+        if (_attackTimer <= 0f)
+        {
+            WantsToFire = true;
+            _attackTimer = _attackCooldownDuration;
+        }
+    }
+
+    public void ConsumeFireRequest()
+    {
+        WantsToFire = false;
     }
 
     private void ApplyKnockback(float delta)
@@ -64,39 +145,41 @@ public class Enemy
             State = EnemyState.Chasing;
     }
 
-    // Called by collision code the instant this enemy successfully hits the player.
-    public void OnHitPlayer(Vector2 playerPosition)
-    {
-        Vector2 knockDirection = Position - playerPosition;
-        if (knockDirection == Vector2.Zero)
-            knockDirection = new Vector2(1, 0); // arbitrary fallback if perfectly overlapping
-
-        knockDirection.Normalize();
-
-        _knockbackVelocity = knockDirection * GameConstants.EnemyKnockbackSpeed;
-        _knockbackTimer = GameConstants.EnemyKnockbackDuration;
-        _attackCooldownTimer = GameConstants.EnemyAttackCooldown;
-        State = EnemyState.Knockback;
-    }
-
     public void TakeDamage(int amount)
     {
         Health = System.Math.Max(0, Health - amount);
     }
 
-    public Vector2 HitboxCenter => Position - new Vector2(0, GameConstants.EnemyHeight / 2f);
-    public float HitboxRadius => GameConstants.EnemyHitboxRadius;
+    public void OnHitPlayer(Vector2 playerPosition)
+    {
+        Vector2 knockDirection = Position - playerPosition;
+        if (knockDirection == Vector2.Zero)
+            knockDirection = new Vector2(1, 0);
+
+        knockDirection.Normalize();
+
+        _knockbackVelocity = knockDirection * GameConstants.EnemyKnockbackSpeed;
+        _knockbackTimer = GameConstants.EnemyKnockbackDuration;
+        _contactCooldownTimer = GameConstants.EnemyAttackCooldown;
+        State = EnemyState.Knockback;
+    }
+
+    public Vector2 HitboxCenter => Position - new Vector2(0, _height / 2f);
+    public float HitboxRadius => _hitboxRadius;
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel)
     {
         var rect = new Rectangle(
-            (int)(Position.X - GameConstants.EnemyWidth / 2f),
-            (int)(Position.Y - GameConstants.EnemyHeight),
-            GameConstants.EnemyWidth,
-            GameConstants.EnemyHeight);
+            (int)(Position.X - _width / 2f),
+            (int)(Position.Y - _height),
+            _width, _height);
 
-        // Tint differently while knocked back, so you can visually confirm the state works
-        Color color = State == EnemyState.Knockback ? Color.OrangeRed : Color.DarkRed;
+        Color color = Type switch
+        {
+            EnemyType.Ranged => State == EnemyState.Knockback ? Color.Plum : Color.Purple,
+            _ => State == EnemyState.Knockback ? Color.OrangeRed : Color.DarkRed,
+        };
+
         spriteBatch.Draw(pixel, rect, color);
     }
 }

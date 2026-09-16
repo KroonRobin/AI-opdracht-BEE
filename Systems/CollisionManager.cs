@@ -7,10 +7,9 @@ namespace AI_opdracht_BEE.Systems;
 
 public static class CollisionManager
 {
-    // Returns how many enemies died this frame, so Game1 can add to the score.
-    public static int CheckBulletsVsEnemies(List<Bullet> bullets, List<Enemy> enemies)
+    public static List<Vector2> CheckBulletsVsEnemies(List<Bullet> bullets, List<Enemy> enemies)
     {
-        int kills = 0;
+        var deathPositions = new List<Vector2>();
 
         foreach (var bullet in bullets)
         {
@@ -23,22 +22,22 @@ public static class CollisionManager
                     continue;
 
                 bool overlapping = Vector2.Distance(bullet.Position, enemy.HitboxCenter)
-                                    < GameConstants.BulletRadius + enemy.HitboxRadius;
+                                    < bullet.Radius + enemy.HitboxRadius;
 
                 if (overlapping)
                 {
-                    enemy.TakeDamage(GameConstants.BulletDamage);
+                    enemy.TakeDamage(bullet.Damage);
                     bullet.Deactivate();
 
                     if (!enemy.IsAlive)
-                        kills++;
+                        deathPositions.Add(enemy.Position);
 
-                    break; // this bullet is spent, stop checking it against other enemies
+                    break;
                 }
             }
         }
 
-        return kills;
+        return deathPositions;
     }
 
     public static void CheckEnemiesVsPlayer(List<Enemy> enemies, Player player)
@@ -53,9 +52,49 @@ public static class CollisionManager
 
             if (overlapping)
             {
-                player.TakeDamage(GameConstants.EnemyContactDamage);
+                player.TakeDamage(enemy.ContactDamage);
                 enemy.OnHitPlayer(player.Position);
             }
         }
+    }
+
+    public static void CheckEnemyBulletsVsPlayer(List<Bullet> enemyBullets, Player player)
+    {
+        foreach (var bullet in enemyBullets)
+        {
+            if (!bullet.IsActive)
+                continue;
+
+            bool overlapping = Vector2.Distance(bullet.Position, player.HitboxCenter)
+                                < bullet.Radius + player.HitboxRadius;
+
+            if (overlapping)
+            {
+                player.TakeDamage(bullet.Damage);
+                bullet.Deactivate();
+            }
+        }
+    }
+
+    public static List<UpgradeType> CheckPickupsVsPlayer(List<Pickup> pickups, Player player)
+    {
+        var collected = new List<UpgradeType>();
+
+        foreach (var pickup in pickups)
+        {
+            if (!pickup.IsActive)
+                continue;
+
+            bool overlapping = Vector2.Distance(pickup.HitboxCenter, player.HitboxCenter)
+                                < pickup.HitboxRadius + player.HitboxRadius;
+
+            if (overlapping)
+            {
+                pickup.Collect();
+                collected.Add(pickup.Type);
+            }
+        }
+
+        return collected;
     }
 }

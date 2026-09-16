@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -18,7 +19,7 @@ public class Game1 : Game
     private Player _player;
 
     private List<Bullet> _bullets = new();
-    private MouseState _previousMouseState;
+    private List<Bullet> _enemyBullets = new();
     private MouseState _currentMouseState;
 
     private List<Enemy> _enemies = new();
@@ -32,6 +33,16 @@ public class Game1 : Game
 
     private Texture2D _healthBarBackground;
     private Texture2D _healthBarBorder;
+
+    private LevelManager _levelManager;
+
+    private List<Pickup> _pickups = new();
+    private Random _random = new();
+    private int _currentBulletDamage;
+    private float _currentFireInterval;
+
+    private int _upgradesDroppedThisRound;
+    private int _lastTrackedLevel;
 
     public Game1()
     {
@@ -60,11 +71,11 @@ public class Game1 : Game
         _pixel.SetData(new[] { Color.White });
 
         _healthBarBackground = TextureFactory.CreateRoundedRect(
-        GraphicsDevice,
-        GameConstants.HealthBarWidth,
-        GameConstants.HealthBarHeight,
-        GameConstants.HealthBarCornerRadius,
-        Color.Black);
+            GraphicsDevice,
+            GameConstants.HealthBarWidth,
+            GameConstants.HealthBarHeight,
+            GameConstants.HealthBarCornerRadius,
+            Color.Black);
 
         int borderWidth = GameConstants.HealthBarWidth + GameConstants.HealthBarOutlineThickness * 2;
         int borderHeight = GameConstants.HealthBarHeight + GameConstants.HealthBarOutlineThickness * 2;
@@ -83,10 +94,17 @@ public class Game1 : Game
         _player = new Player(new Vector2(GameConstants.RoomWidth / 2f, GameConstants.RoomHeight / 2f));
         _enemies.Clear();
         _bullets.Clear();
+        _enemyBullets.Clear();
         _enemySpawner = new EnemySpawner();
+        _levelManager = new LevelManager();
         _score = 0;
         _fireCooldown = 0f;
         _gameState = GameState.Playing;
+        _currentBulletDamage = GameConstants.BulletDamage;
+        _currentFireInterval = GameConstants.BaseFireInterval;
+        _pickups.Clear();
+        _upgradesDroppedThisRound = 0;
+        _lastTrackedLevel = 0;
     }
 
     protected override void Update(GameTime gameTime)
@@ -132,25 +150,70 @@ public class Game1 : Game
             if (direction != Vector2.Zero)
             {
                 direction.Normalize();
-                _bullets.Add(new Bullet(shootOrigin, direction));
-                _fireCooldown = GameConstants.BaseFireInterval;
+                _bullets.Add(new Bullet(
+                    shootOrigin, direction, _currentBulletDamage,
+                    GameConstants.BulletSpeed, GameConstants.BulletRadius, Color.Gold));
+                _fireCooldown = _currentFireInterval;
             }
         }
 
         foreach (var bullet in _bullets)
             bullet.Update(gameTime);
+
+        foreach (var bullet in _enemyBullets)
+            bullet.Update(gameTime);
         // --- end mouse aim/shoot ---
 
-        _enemySpawner.Update(gameTime, _enemies);
+        _levelManager.Update(gameTime, _enemies, _enemySpawner);
+
+        if (_levelManager.CurrentLevel != _lastTrackedLevel)
+        {
+            _lastTrackedLevel = _levelManager.CurrentLevel;
+            _upgradesDroppedThisRound = 0;
+        }
+
+        if (_levelManager.IsSpawningAllowed)
+            _enemySpawner.Update(gameTime, _enemies);
 
         foreach (var enemy in _enemies)
             enemy.Update(gameTime, _player.Position);
 
-        _score += CollisionManager.CheckBulletsVsEnemies(_bullets, _enemies);
+        // --- Ranged enemy fire requests ---
+        foreach (var enemy in _enemies)
+        {
+            if (!enemy.WantsToFire)
+                continue;
+
+            Vector2 direction = _player.Position - enemy.ShootOrigin;
+            if (direction != Vector2.Zero)
+            {
+                direction.Normalize();
+                _enemyBullets.Add(new Bullet(
+                    enemy.ShootOrigin, direction, enemy.BulletDamage,
+                    GameConstants.EnemyBulletSpeed, GameConstants.EnemyBulletRadius, Color.Cyan));
+            }
+
+            enemy.ConsumeFireRequest();
+        }
+        // --- end ranged enemy fire requests ---
+
+        var deathPositions = CollisionManager.CheckBulletsVsEnemies(_bullets, _enemies);
+        _score += deathPositions.Count;
+
+        foreach (var deathPosition in deathPositions)
+            TryDropPickup(deathPosition);
+
         CollisionManager.CheckEnemiesVsPlayer(_enemies, _player);
+        CollisionManager.CheckEnemyBulletsVsPlayer(_enemyBullets, _player);
+
+        var collectedUpgrades = CollisionManager.CheckPickupsVsPlayer(_pickups, _player);
+        foreach (var upgrade in collectedUpgrades)
+            ApplyUpgrade(upgrade);
 
         _bullets.RemoveAll(b => !b.IsActive);
+        _enemyBullets.RemoveAll(b => !b.IsActive);
         _enemies.RemoveAll(e => !e.IsAlive);
+        _pickups.RemoveAll(p => !p.IsActive);
 
         if (!_player.IsAlive)
             _gameState = GameState.GameOver;
@@ -166,6 +229,45 @@ public class Game1 : Game
             ResetGame();
     }
 
+    private void TryDropPickup(Vector2 position)
+    {
+        if (_upgradesDroppedThisRound >= GameConstants.MaxUpgradesPerRound)
+            return;
+
+        if (_random.NextDouble() > GameConstants.PickupDropChance)
+            return;
+
+        var allTypes = Enum.GetValues<UpgradeType>();
+        var chosenType = allTypes[_random.Next(allTypes.Length)];
+
+        _pickups.Add(new Pickup(position, chosenType));
+        _upgradesDroppedThisRound++;
+    }
+
+    private void ApplyUpgrade(UpgradeType type)
+    {
+        switch (type)
+        {
+            case UpgradeType.Damage:
+                _currentBulletDamage += GameConstants.DamageUpgradeAmount;
+                break;
+
+            case UpgradeType.FireRate:
+                _currentFireInterval = Math.Max(
+                    GameConstants.MinFireInterval,
+                    _currentFireInterval * GameConstants.FireRateUpgradeMultiplier);
+                break;
+
+            case UpgradeType.MoveSpeed:
+                _player.IncreaseMoveSpeed(GameConstants.MoveSpeedUpgradeAmount);
+                break;
+
+            case UpgradeType.MaxHealth:
+                _player.IncreaseMaxHealth(GameConstants.MaxHealthUpgradeAmount);
+                break;
+        }
+    }
+
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(new Color(62, 48, 40));
@@ -177,10 +279,19 @@ public class Game1 : Game
         foreach (var bullet in _bullets)
             bullet.Draw(_spriteBatch, _pixel);
 
+        foreach (var bullet in _enemyBullets)
+            bullet.Draw(_spriteBatch, _pixel);
+
         foreach (var enemy in _enemies)
             enemy.Draw(_spriteBatch, _pixel);
 
+        foreach (var pickup in _pickups)
+            pickup.Draw(_spriteBatch, _pixel, _font);
+
         DrawHud();
+
+        if (_levelManager.ShowBanner)
+            DrawRoundBanner();
 
         if (_gameState == GameState.GameOver)
             DrawGameOverScreen();
@@ -188,6 +299,17 @@ public class Game1 : Game
         _spriteBatch.End();
 
         base.Draw(gameTime);
+    }
+
+    private void DrawRoundBanner()
+    {
+        string text = _levelManager.BannerText;
+        Vector2 textSize = _font.MeasureString(text);
+        Vector2 position = new Vector2(
+            GameConstants.RoomWidth / 2f - textSize.X / 2f,
+            GameConstants.RoomHeight / 2f - textSize.Y / 2f);
+
+        _spriteBatch.DrawString(_font, text, position, Color.White);
     }
 
     private void DrawHud()
@@ -203,11 +325,9 @@ public class Game1 : Game
             outerRect.Width + GameConstants.HealthBarOutlineThickness * 2,
             outerRect.Height + GameConstants.HealthBarOutlineThickness * 2);
 
-        // Rounded dark background
         _spriteBatch.Draw(_healthBarBackground, outerRect, Color.White);
 
-        // Green fill — plain rectangle, corners hidden by the border drawn after it
-        float healthPercent = (float)_player.Health / GameConstants.PlayerMaxHealth;
+        float healthPercent = (float)_player.Health / _player.MaxHealth;
 
         Color healthBarColor;
         if (healthPercent <= GameConstants.HealthBarRedThreshold)
@@ -225,10 +345,8 @@ public class Game1 : Game
 
         _spriteBatch.Draw(_pixel, fillRect, healthBarColor);
 
-        // Rounded white border, drawn on top
         _spriteBatch.Draw(_healthBarBorder, borderRect, Color.White);
 
-        // Health number, centered in the bar
         string healthText = $"{_player.Health} HP";
         Vector2 textSize = _font.MeasureString(healthText);
         Vector2 textPosition = new Vector2(
@@ -237,7 +355,6 @@ public class Game1 : Game
 
         _spriteBatch.DrawString(_font, healthText, textPosition, Color.White);
 
-        // Score, positioned just left of the health bar
         string scoreText = $"Score: {_score}";
         Vector2 scoreSize = _font.MeasureString(scoreText);
         Vector2 scorePosition = new Vector2(

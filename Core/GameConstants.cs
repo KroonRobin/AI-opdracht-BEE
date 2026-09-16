@@ -3,8 +3,8 @@ namespace AI_opdracht_BEE.Core;
 public static class GameConstants
 {
     // Room / window dimensions
-    public const int RoomWidth = 1280;
-    public const int RoomHeight = 720;
+    public const int RoomWidth = 1600;
+    public const int RoomHeight = 900;
 
     // Player
     public const float PlayerSpeed = 220f;      // pixels per second
@@ -24,15 +24,42 @@ public static class GameConstants
     public const int HealthBarCornerRadius = 8;
     public const int HealthBarOutlineThickness = 3;
 
-    // Enemy
+    // Leveling
+    public const int BaseEnemiesPerLevel = 8;
+    public const float EnemiesPerLevelGrowth = 0.25f;      // +25% enemy count per level
+    public const float EnemyHealthGrowthPerLevel = 0.15f;  // +15% enemy health per level
+    public const float EnemyDamageGrowthPerLevel = 0.15f;  // +15% enemy damage per level
+
+    public const float InitialRoundAnnouncementDelay = 2f; // delay before "Round 1" banner at game start
+    public const float RoundTransitionDelay = 5f;          // wait after last enemy dies, before announcing next round
+    public const float RoundAnnouncementDuration = 3f;      // how long the round banner stays visible
+
+    // Enemy standard
     public const float EnemySpeed = 90f;
     public const int EnemyWidth = 22;
     public const int EnemyHeight = 32;
     public const int EnemyHitboxRadius = 11;
 
+    // Ranged enemy
+    public const float RangedEnemySpeed = 70f;
+    public const int RangedEnemyWidth = 22;
+    public const int RangedEnemyHeight = 32;
+    public const int RangedEnemyHitboxRadius = 11;
+    public const int RangedEnemyBaseHealth = 10;
+    public const int RangedEnemyBaseContactDamage = 5;
+    public const int RangedEnemyBaseBulletDamage = 6;
+    public const float RangedEnemyEngageRange = RoomWidth / 3f;   
+    public const float RangedEnemyAttackCooldown = 1.2f;
+    public const float RangedEnemySpawnChance = 0.3f;              // 30% of spawns are ranged
+    public const int RangedEnemyUnlockRound = 5;
+
+    // Enemy bullets
+    public const float EnemyBulletSpeed = 400f;
+    public const int EnemyBulletRadius = 5;
+
     // Enemy health
-    public const int EnemyMaxHealth = 1;
-    public const int BulletDamage = 1;
+    public const int EnemyMaxHealth = 10;
+    public const int BulletDamage = 10;
 
     // Enemy behavior
     public const float EnemyKnockbackSpeed = 350f;
@@ -51,4 +78,16 @@ public static class GameConstants
     public const float InitialSpawnInterval = 1.5f;   // seconds between spawns
     public const float MinimumSpawnInterval = 0.25f;
     public const float SpawnRampPerSecond = 0.01f;    // how fast difficulty climbs
+
+    // Pickups / Upgrades
+    public const float PickupDropChance = 0.1f;   // 35% chance per enemy kill
+    public const int PickupSize = 16;
+    public const int PickupHitboxRadius = 10;
+
+    public const int DamageUpgradeAmount = 3;
+    public const float FireRateUpgradeMultiplier = 0.85f;  // 15% faster per pickup
+    public const float MinFireInterval = 0.1f;             // hard floor, prevents infinite fire rate stacking
+    public const float MoveSpeedUpgradeAmount = 25f;
+    public const int MaxHealthUpgradeAmount = 25;
+    public const int MaxUpgradesPerRound = 2;
 }
