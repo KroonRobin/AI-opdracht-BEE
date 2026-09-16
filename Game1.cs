@@ -208,19 +208,28 @@ public class Game1 : Game
 
         // Green fill — plain rectangle, corners hidden by the border drawn after it
         float healthPercent = (float)_player.Health / GameConstants.PlayerMaxHealth;
+
+        Color healthBarColor;
+        if (healthPercent <= GameConstants.HealthBarRedThreshold)
+            healthBarColor = Color.Red;
+        else if (healthPercent <= GameConstants.HealthBarYellowThreshold)
+            healthBarColor = new Color(191, 143, 0);
+        else
+            healthBarColor = Color.Green;
+
         var fillRect = new Rectangle(
             outerRect.X,
             outerRect.Y,
             (int)(outerRect.Width * healthPercent),
             outerRect.Height);
 
-        _spriteBatch.Draw(_pixel, fillRect, Color.Green);
+        _spriteBatch.Draw(_pixel, fillRect, healthBarColor);
 
         // Rounded white border, drawn on top
         _spriteBatch.Draw(_healthBarBorder, borderRect, Color.White);
 
         // Health number, centered in the bar
-        string healthText = _player.Health.ToString();
+        string healthText = $"{_player.Health} HP";
         Vector2 textSize = _font.MeasureString(healthText);
         Vector2 textPosition = new Vector2(
             outerRect.X + outerRect.Width / 2f - textSize.X / 2f,

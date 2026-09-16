@@ -13,6 +13,10 @@ public static class GameConstants
     public const int PlayerHitboxRadius = 10;   // collision circle at the feet
     public const int PlayerMaxHealth = 100;   // was 5 — update the existing line
 
+    // Health bar color thresholds
+    public const float HealthBarYellowThreshold = 0.5f;
+    public const float HealthBarRedThreshold = 0.25f;
+
     // UI
     public const int HealthBarWidth = 220;
     public const int HealthBarHeight = 25;         
