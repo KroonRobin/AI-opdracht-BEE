@@ -16,6 +16,7 @@ public class Player
     public int Health { get; private set; } = GameConstants.PlayerMaxHealth;
     public bool IsAlive => Health > 0;
     public float MoveSpeed { get; private set; } = GameConstants.PlayerSpeed;
+    public bool IsAtMaxSpeed => MoveSpeed >= GameConstants.PlayerMaxSpeedCap;
     public int MaxHealth { get; private set; } = GameConstants.PlayerMaxHealth;
 
     public Player(Vector2 startPosition)
@@ -71,13 +72,18 @@ public class Player
 
     public void IncreaseMoveSpeed(float amount)
     {
-        MoveSpeed += amount;
+        MoveSpeed = System.Math.Min(MoveSpeed + amount, GameConstants.PlayerMaxSpeedCap);
     }
 
     public void IncreaseMaxHealth(int amount)
     {
         MaxHealth += amount;
         Health += amount;  // also heals by the same amount, so the pickup feels immediately rewarding
+    }
+
+    public void Heal(int amount)
+    {
+        Health = System.Math.Min(Health + amount, MaxHealth);
     }
 
     // The collision circle sits at the feet, not the whole sprite.

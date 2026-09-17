@@ -5,5 +5,6 @@ public enum UpgradeType
     Damage,
     FireRate,
     MoveSpeed,
-    MaxHealth
+    MaxHealth,
+    Heal
 }

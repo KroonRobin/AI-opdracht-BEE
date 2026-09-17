@@ -8,6 +8,7 @@ public static class GameConstants
 
     // Player
     public const float PlayerSpeed = 220f;      // pixels per second
+    public const float PlayerMaxSpeedCap = 800f;   // hard ceiling; tune to taste once you test it
     public const int PlayerWidth = 24;
     public const int PlayerHeight = 40;         // taller than wide, like a 3/4 character sprite
     public const int PlayerHitboxRadius = 10;   // collision circle at the feet
@@ -87,9 +88,12 @@ public static class GameConstants
     public const int DamageUpgradeAmount = 3;
     public const float FireRateUpgradeMultiplier = 0.85f;  // 15% faster per pickup
     public const float MinFireInterval = 0.1f;             // hard floor, prevents infinite fire rate stacking
-    public const float MoveSpeedUpgradeAmount = 25f;
+    public const float MoveSpeedUpgradeAmount = 50f;
     public const int MaxHealthUpgradeAmount = 25;
     public const int MaxUpgradesPerRound = 2;
+
+    public const int HealAmount = 50;
+    public const float HealDropWeight = 1.0f;
 
     // Upgrade drop weights — higher number = more likely. Don't need to sum to any particular total.
     public const float DamageDropWeight = 1.0f;

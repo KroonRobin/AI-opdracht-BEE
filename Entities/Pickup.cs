@@ -82,6 +82,7 @@ public class Pickup
         UpgradeType.FireRate => Color.Cyan,
         UpgradeType.MoveSpeed => Color.Gold,
         UpgradeType.MaxHealth => Color.HotPink,
+        UpgradeType.Heal => Color.LimeGreen,
         _ => Color.White
     };
 
@@ -91,6 +92,7 @@ public class Pickup
         UpgradeType.FireRate => "RATE",
         UpgradeType.MoveSpeed => "SPD",
         UpgradeType.MaxHealth => "HP+",
+        UpgradeType.Heal => "HEAL",
         _ => "?"
     };
 }

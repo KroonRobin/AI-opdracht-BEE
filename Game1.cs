@@ -556,13 +556,16 @@ public class Game1 : Game
 
     private UpgradeType PickWeightedUpgradeType()
     {
-        var weightedOptions = new (UpgradeType type, float weight)[]
-        {
-            (UpgradeType.Damage, GameConstants.DamageDropWeight),
-            (UpgradeType.FireRate, GameConstants.FireRateDropWeight),
-            (UpgradeType.MoveSpeed, GameConstants.MoveSpeedDropWeight),
-            (UpgradeType.MaxHealth, GameConstants.MaxHealthDropWeight),
-        };
+        var weightedOptions = new List<(UpgradeType type, float weight)>
+    {
+        (UpgradeType.Damage, GameConstants.DamageDropWeight),
+        (UpgradeType.FireRate, GameConstants.FireRateDropWeight),
+        (UpgradeType.MaxHealth, GameConstants.MaxHealthDropWeight),
+        (UpgradeType.Heal, GameConstants.HealDropWeight),
+    };
+
+        if (!_player.IsAtMaxSpeed)
+            weightedOptions.Add((UpgradeType.MoveSpeed, GameConstants.MoveSpeedDropWeight));
 
         float totalWeight = weightedOptions.Sum(o => o.weight);
         float roll = (float)(_random.NextDouble() * totalWeight);
@@ -575,7 +578,7 @@ public class Game1 : Game
                 return type;
         }
 
-        return weightedOptions[^1].type; // fallback, should never actually be reached
+        return weightedOptions[^1].type;
     }
 
     private void ApplyUpgrade(UpgradeType type)
@@ -598,6 +601,10 @@ public class Game1 : Game
 
             case UpgradeType.MaxHealth:
                 _player.IncreaseMaxHealth(GameConstants.MaxHealthUpgradeAmount);
+                break;
+
+            case UpgradeType.Heal:
+                _player.Heal(GameConstants.HealAmount);
                 break;
         }
     }
