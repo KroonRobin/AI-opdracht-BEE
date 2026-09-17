@@ -20,6 +20,8 @@ public class EnemySpawner
     private int _rangedHealth;
     private int _rangedContactDamage;
     private int _rangedBulletDamage;
+    private int _brawlerHealth;
+    private int _brawlerPoints;
 
     private int _currentLevelIndex;
 
@@ -48,6 +50,9 @@ public class EnemySpawner
         _rangedContactDamage = (int)Math.Round(GameConstants.RangedEnemyBaseContactDamage * damageGrowth);
         _rangedBulletDamage = (int)Math.Round(GameConstants.RangedEnemyBaseBulletDamage * damageGrowth);
         _rangedPoints = (int)Math.Round(GameConstants.RangedEnemyBasePoints * pointsGrowth);
+
+        _brawlerHealth = (int)Math.Round(GameConstants.BrawlerEnemyBaseHealth * healthGrowth);
+        _brawlerPoints = (int)Math.Round(GameConstants.BrawlerEnemyBasePoints * pointsGrowth);
     }
 
     public void Update(GameTime gameTime, List<Enemy> enemies)
@@ -74,14 +79,21 @@ public class EnemySpawner
     private Enemy CreateNextEnemy()
     {
         Vector2 position = GetRandomEdgePosition();
-
         int currentRound = _currentLevelIndex + 1;
+
         bool rangedUnlocked = currentRound >= GameConstants.RangedEnemyUnlockRound;
         bool spawnRanged = rangedUnlocked && _random.NextDouble() < GameConstants.RangedEnemySpawnChance;
 
-        return spawnRanged
-            ? Enemy.CreateRanged(position, _rangedHealth, _rangedContactDamage, _rangedBulletDamage, _rangedPoints)
-            : Enemy.CreateMelee(position, _meleeHealth, _meleeDamage, _meleePoints);
+        if (spawnRanged)
+            return Enemy.CreateRanged(position, _rangedHealth, _rangedContactDamage, _rangedBulletDamage, _rangedPoints);
+
+        bool brawlerUnlocked = currentRound >= GameConstants.BrawlerEnemyUnlockRound;
+        bool spawnBrawler = brawlerUnlocked && _random.NextDouble() < GameConstants.BrawlerEnemySpawnChance;
+
+        if (spawnBrawler)
+            return Enemy.CreateBrawler(position, _brawlerHealth, _meleeDamage, _brawlerPoints);
+
+        return Enemy.CreateMelee(position, _meleeHealth, _meleeDamage, _meleePoints);
     }
 
     private Vector2 GetRandomEdgePosition()

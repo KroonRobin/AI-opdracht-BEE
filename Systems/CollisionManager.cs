@@ -33,6 +33,16 @@ public static class CollisionManager
                 if (!enemy.IsAlive)
                     continue;
 
+                if (enemy.DodgesBullets)
+                {
+                    float detectionDistance = bullet.Radius + enemy.HitboxRadius + GameConstants.BrawlerDodgeDetectionRadius;
+
+                    if (Vector2.Distance(bullet.Position, enemy.HitboxCenter) < detectionDistance)
+                        enemy.OnDodgeBullet(bullet.Position);
+
+                    continue;
+                }
+
                 bool overlapping = Vector2.Distance(bullet.Position, enemy.HitboxCenter)
                                     < bullet.Radius + enemy.HitboxRadius;
 

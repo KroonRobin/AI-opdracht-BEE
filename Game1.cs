@@ -20,6 +20,8 @@ public class Game1 : Game
     private Texture2D _pixel;
     private Player _player;
 
+    private bool _shootingUnlocked;
+
     private List<Bullet> _bullets = new();
     private List<Bullet> _enemyBullets = new();
     private MouseState _currentMouseState;
@@ -152,6 +154,7 @@ public class Game1 : Game
         _pickups.Clear();
         _upgradesDroppedThisRound = 0;
         _lastTrackedLevel = 0;
+        _shootingUnlocked = false;
     }
 
     protected override void Update(GameTime gameTime)
@@ -228,7 +231,10 @@ public class Game1 : Game
         // --- Mouse aim/shoot ---
         _fireCooldown -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        bool wantsToShoot = _currentMouseState.LeftButton == ButtonState.Pressed;
+        if (!_shootingUnlocked && _currentMouseState.LeftButton == ButtonState.Released)
+            _shootingUnlocked = true;
+
+        bool wantsToShoot = _shootingUnlocked && _currentMouseState.LeftButton == ButtonState.Pressed;
 
         if (wantsToShoot && _fireCooldown <= 0f)
         {

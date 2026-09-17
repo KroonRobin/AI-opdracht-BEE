@@ -4,7 +4,7 @@ using AI_opdracht_BEE.Core;
 
 namespace AI_opdracht_BEE.Entities;
 
-public enum EnemyType { Melee, Ranged }
+public enum EnemyType { Melee, Ranged, Brawler }
 public enum EnemyState { Chasing, Attacking, Knockback }
 
 public class Enemy
@@ -61,6 +61,15 @@ public class Enemy
             bulletDamage: 0, pointValue);
     }
 
+    public static Enemy CreateBrawler(Vector2 startPosition, int maxHealth, int contactDamage, int pointValue)
+    {
+        return new Enemy(
+            EnemyType.Brawler, startPosition, maxHealth, contactDamage,
+            GameConstants.BrawlerEnemySpeed, GameConstants.BrawlerEnemyWidth, GameConstants.BrawlerEnemyHeight,
+            GameConstants.BrawlerEnemyHitboxRadius, engageRange: 0f, attackCooldownDuration: 0f,
+            bulletDamage: 0, pointValue);
+    }
+
     public static Enemy CreateRanged(Vector2 startPosition, int maxHealth, int contactDamage, int bulletDamage, int pointValue)
     {
         return new Enemy(
@@ -71,6 +80,7 @@ public class Enemy
     }
 
     public bool CanAttack => State != EnemyState.Knockback && _contactCooldownTimer <= 0f;
+    public bool DodgesBullets => Type == EnemyType.Brawler;
     public Vector2 ShootOrigin => Position - new Vector2(0, _height / 2f);
 
     public void Update(GameTime gameTime, Vector2 playerPosition)
@@ -167,6 +177,19 @@ public class Enemy
         State = EnemyState.Knockback;
     }
 
+    public void OnDodgeBullet(Vector2 bulletPosition)
+    {
+        Vector2 pushDirection = Position - bulletPosition;
+        if (pushDirection == Vector2.Zero)
+            pushDirection = new Vector2(1, 0);
+
+        pushDirection.Normalize();
+
+        _knockbackVelocity = pushDirection * GameConstants.BrawlerDodgeSpeed;
+        _knockbackTimer = GameConstants.BrawlerDodgeDuration;
+        State = EnemyState.Knockback;
+    }
+
     public Vector2 HitboxCenter => Position - new Vector2(0, _height / 2f);
     public float HitboxRadius => _hitboxRadius;
 
@@ -180,6 +203,7 @@ public class Enemy
         Color color = Type switch
         {
             EnemyType.Ranged => State == EnemyState.Knockback ? Color.Plum : Color.Purple,
+            EnemyType.Brawler => State == EnemyState.Knockback ? Color.Yellow : Color.DarkOrange,
             _ => State == EnemyState.Knockback ? Color.OrangeRed : Color.DarkRed,
         };
 

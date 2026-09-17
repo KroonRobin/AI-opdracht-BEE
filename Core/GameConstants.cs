@@ -60,6 +60,21 @@ public static class GameConstants
     public const int EnemyHeight = 32;
     public const int EnemyHitboxRadius = 11;
 
+    // Brawler enemy
+    public const float BrawlerEnemySpeed = 200f;    // faster than melee's 110f
+    public const int BrawlerEnemyWidth = 22;
+    public const int BrawlerEnemyHeight = 32;
+    public const int BrawlerEnemyHitboxRadius = 11;
+    public const int BrawlerEnemyBaseHealth = 8;
+    public const int BrawlerEnemyBasePoints = 150;
+    public const float BrawlerEnemySpawnChance = 0.2f;
+    public const int BrawlerEnemyUnlockRound = 10;
+
+    // Brawler bullet dodging
+    public const float BrawlerDodgeDetectionRadius = 90f;   // extra range beyond the hitbox that triggers a dodge
+    public const float BrawlerDodgeSpeed = 320f;
+    public const float BrawlerDodgeDuration = 0.2f;
+
     // Ranged enemy
     public const float RangedEnemySpeed = 70f;
     public const int RangedEnemyWidth = 22;
