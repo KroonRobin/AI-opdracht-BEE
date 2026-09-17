@@ -3,8 +3,8 @@ namespace AI_opdracht_BEE.Core;
 public static class GameConstants
 {
     // Room / window dimensions
-    public const int RoomWidth = 1600;
-    public const int RoomHeight = 900;
+    public const int RoomWidth = 1920;
+    public const int RoomHeight = 1080;
 
     // Player
     public const float PlayerSpeed = 220f;      // pixels per second

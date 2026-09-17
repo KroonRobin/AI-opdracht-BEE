@@ -46,8 +46,6 @@ public class Game1 : Game
     private int _upgradesDroppedThisRound;
     private int _lastTrackedLevel;
 
-    private Dictionary<UpgradeType, int> _dropCounts = new();
-
     private List<int> _highScores = new();
     private int _selectedMenuIndex;
     private static readonly string[] MenuOptions = { "Start", "High Scores", "Exit" };
@@ -63,6 +61,13 @@ public class Game1 : Game
     private static readonly string[] PauseOptions = { "Continue", "Main Menu" };
     private Texture2D _pauseBackgroundImage;   // separate from menu/game-over, swappable later same as the others
 
+    private RenderTarget2D _renderTarget;
+    private Rectangle _renderDestinationRect;
+    private float _renderScale;
+    private int _renderOffsetX;
+    private int _renderOffsetY;
+    private Vector2 _virtualMousePosition;
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -72,14 +77,16 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        _graphics.PreferredBackBufferWidth = GameConstants.RoomWidth;
-        _graphics.PreferredBackBufferHeight = GameConstants.RoomHeight;
+        var displayMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
+        _graphics.PreferredBackBufferWidth = displayMode.Width;
+        _graphics.PreferredBackBufferHeight = displayMode.Height;
+        _graphics.IsFullScreen = true;
         _graphics.ApplyChanges();
 
         _highScores = HighScoreManager.Load();
 
         ResetGame();
-        _gameState = GameState.MainMenu; // override the Playing state ResetGame() sets
+        _gameState = GameState.MainMenu;
 
         base.Initialize();
     }
@@ -91,6 +98,8 @@ public class Game1 : Game
 
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
+
+        _renderTarget = new RenderTarget2D(GraphicsDevice, GameConstants.RoomWidth, GameConstants.RoomHeight);
 
         _healthBarBackground = TextureFactory.CreateRoundedRect(
             GraphicsDevice,
@@ -134,9 +143,12 @@ public class Game1 : Game
 
     protected override void Update(GameTime gameTime)
     {
+        UpdateRenderTransform();
+
         var currentKeyboardState = Keyboard.GetState();
         var currentMouseState = Mouse.GetState();
         _currentMouseState = currentMouseState;
+        _virtualMousePosition = ScreenToVirtualMouse(currentMouseState);
 
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
             Exit();
@@ -202,7 +214,7 @@ public class Game1 : Game
 
         if (wantsToShoot && _fireCooldown <= 0f)
         {
-            Vector2 mousePosition = new Vector2(_currentMouseState.X, _currentMouseState.Y);
+            Vector2 mousePosition = _virtualMousePosition;
             Vector2 shootOrigin = _player.Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
             Vector2 direction = mousePosition - shootOrigin;
 
@@ -310,7 +322,7 @@ public class Game1 : Game
         if (downPressed)
             _selectedPauseIndex = (_selectedPauseIndex + 1) % PauseOptions.Length;
 
-        Point mousePoint = new Point(currentMouseState.X, currentMouseState.Y);
+        Point mousePoint = new Point((int)_virtualMousePosition.X, (int)_virtualMousePosition.Y);
         int? hoveredIndex = null;
 
         for (int i = 0; i < PauseOptions.Length; i++)
@@ -367,7 +379,7 @@ public class Game1 : Game
         if (downPressed)
             _selectedGameOverIndex = (_selectedGameOverIndex + 1) % GameOverOptions.Length;
 
-        Point mousePoint = new Point(currentMouseState.X, currentMouseState.Y);
+        Point mousePoint = new Point((int)_virtualMousePosition.X, (int)_virtualMousePosition.Y);
         int? hoveredIndex = null;
 
         for (int i = 0; i < GameOverOptions.Length; i++)
@@ -425,7 +437,7 @@ public class Game1 : Game
             _selectedMenuIndex = (_selectedMenuIndex + 1) % MenuOptions.Length;
 
         // Mouse hover overrides keyboard selection while the cursor sits over an option
-        Point mousePoint = new Point(currentMouseState.X, currentMouseState.Y);
+        Point mousePoint = new Point((int)_virtualMousePosition.X, (int)_virtualMousePosition.Y);
         int? hoveredIndex = null;
 
         for (int i = 0; i < MenuOptions.Length; i++)
@@ -471,7 +483,7 @@ public class Game1 : Game
 
     private void UpdateHighScoresScreen(KeyboardState currentKeyboardState, MouseState currentMouseState)
     {
-        Point mousePoint = new Point(currentMouseState.X, currentMouseState.Y);
+        Point mousePoint = new Point((int)_virtualMousePosition.X, (int)_virtualMousePosition.Y);
         Rectangle backRect = GetBackButtonRect();
         _highScoresBackHovered = backRect.Contains(mousePoint);
 
@@ -546,12 +558,6 @@ public class Game1 : Game
 
         _pickups.Add(new Pickup(position, chosenType));
         _upgradesDroppedThisRound++;
-
-        // --- debug tracking ---
-        if (!_dropCounts.ContainsKey(chosenType))
-            _dropCounts[chosenType] = 0;
-        _dropCounts[chosenType]++;
-        // --- end debug tracking ---
     }
 
     private UpgradeType PickWeightedUpgradeType()
@@ -611,6 +617,8 @@ public class Game1 : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        // --- Pass 1: draw the whole game at a fixed 1920x1080, into the render target ---
+        GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(new Color(62, 48, 40));
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
@@ -646,6 +654,14 @@ public class Game1 : Game
         if (_gameState == GameState.GameOver)
             DrawGameOverScreen();
 
+        _spriteBatch.End();
+
+        // --- Pass 2: scale that canvas onto the real screen, preserving aspect ratio ---
+        GraphicsDevice.SetRenderTarget(null);
+        GraphicsDevice.Clear(Color.Black);
+
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _spriteBatch.Draw(_renderTarget, _renderDestinationRect, Color.White);
         _spriteBatch.End();
 
         base.Draw(gameTime);
@@ -711,11 +727,6 @@ public class Game1 : Game
             outerRect.Y + outerRect.Height / 2f - scoreSize.Y / 2f);
 
         _spriteBatch.DrawString(_font, scoreText, scorePosition, Color.White);
-
-        // --- debug: pickup drop counts ---
-        string dropDebug = string.Join(" | ", _dropCounts.Select(kv => $"{kv.Key}: {kv.Value}"));
-        _spriteBatch.DrawString(_font, dropDebug, new Vector2(16, 60), Color.White);
-        // --- end debug ---
     }
 
     private void DrawMainMenu()
@@ -866,5 +877,30 @@ public class Game1 : Game
             _spriteBatch.Draw(backgroundImage, rect, Color.White);
         else
             _spriteBatch.Draw(_pixel, rect, Color.Black * 0.6f);
+    }
+
+    private void UpdateRenderTransform()
+    {
+        int screenWidth = GraphicsDevice.Viewport.Width;
+        int screenHeight = GraphicsDevice.Viewport.Height;
+
+        float scaleX = screenWidth / (float)GameConstants.RoomWidth;
+        float scaleY = screenHeight / (float)GameConstants.RoomHeight;
+        _renderScale = Math.Min(scaleX, scaleY);
+
+        int destWidth = (int)(GameConstants.RoomWidth * _renderScale);
+        int destHeight = (int)(GameConstants.RoomHeight * _renderScale);
+
+        _renderOffsetX = (screenWidth - destWidth) / 2;
+        _renderOffsetY = (screenHeight - destHeight) / 2;
+
+        _renderDestinationRect = new Rectangle(_renderOffsetX, _renderOffsetY, destWidth, destHeight);
+    }
+
+    private Vector2 ScreenToVirtualMouse(MouseState mouseState)
+    {
+        return new Vector2(
+            (mouseState.X - _renderOffsetX) / _renderScale,
+            (mouseState.Y - _renderOffsetY) / _renderScale);
     }
 }
