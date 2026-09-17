@@ -23,6 +23,9 @@ public class EnemySpawner
 
     private int _currentLevelIndex;
 
+    private int _meleePoints;
+    private int _rangedPoints;
+
     public bool IsDoneSpawning => _enemiesSpawned >= _enemiesToSpawn;
 
     public void StartLevel(int enemyCount, int levelIndex)
@@ -35,13 +38,16 @@ public class EnemySpawner
 
         double healthGrowth = Math.Pow(1 + GameConstants.EnemyHealthGrowthPerLevel, levelIndex);
         double damageGrowth = Math.Pow(1 + GameConstants.EnemyDamageGrowthPerLevel, levelIndex);
+        double pointsGrowth = Math.Pow(1 + GameConstants.EnemyPointsGrowthPerLevel, levelIndex);
 
         _meleeHealth = (int)Math.Round(GameConstants.EnemyMaxHealth * healthGrowth);
         _meleeDamage = (int)Math.Round(GameConstants.EnemyContactDamage * damageGrowth);
+        _meleePoints = (int)Math.Round(GameConstants.MeleeEnemyBasePoints * pointsGrowth);
 
         _rangedHealth = (int)Math.Round(GameConstants.RangedEnemyBaseHealth * healthGrowth);
         _rangedContactDamage = (int)Math.Round(GameConstants.RangedEnemyBaseContactDamage * damageGrowth);
         _rangedBulletDamage = (int)Math.Round(GameConstants.RangedEnemyBaseBulletDamage * damageGrowth);
+        _rangedPoints = (int)Math.Round(GameConstants.RangedEnemyBasePoints * pointsGrowth);
     }
 
     public void Update(GameTime gameTime, List<Enemy> enemies)
@@ -74,8 +80,8 @@ public class EnemySpawner
         bool spawnRanged = rangedUnlocked && _random.NextDouble() < GameConstants.RangedEnemySpawnChance;
 
         return spawnRanged
-            ? Enemy.CreateRanged(position, _rangedHealth, _rangedContactDamage, _rangedBulletDamage)
-            : Enemy.CreateMelee(position, _meleeHealth, _meleeDamage);
+            ? Enemy.CreateRanged(position, _rangedHealth, _rangedContactDamage, _rangedBulletDamage, _rangedPoints)
+            : Enemy.CreateMelee(position, _meleeHealth, _meleeDamage, _meleePoints);
     }
 
     private Vector2 GetRandomEdgePosition()

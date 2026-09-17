@@ -18,6 +18,7 @@ public class Enemy
     public int BulletDamage { get; }
     public bool IsAlive => Health > 0;
     public bool WantsToFire { get; private set; }
+    public int PointValue { get; }
 
     private readonly float _moveSpeed;
     private readonly int _width;
@@ -32,9 +33,9 @@ public class Enemy
     private float _contactCooldownTimer;
 
     private Enemy(
-        EnemyType type, Vector2 startPosition, int maxHealth, int contactDamage,
-        float moveSpeed, int width, int height, float hitboxRadius,
-        float engageRange, float attackCooldownDuration, int bulletDamage)
+    EnemyType type, Vector2 startPosition, int maxHealth, int contactDamage,
+    float moveSpeed, int width, int height, float hitboxRadius,
+    float engageRange, float attackCooldownDuration, int bulletDamage, int pointValue)
     {
         Type = type;
         Position = startPosition;
@@ -48,23 +49,25 @@ public class Enemy
         _attackCooldownDuration = attackCooldownDuration;
         _attackTimer = attackCooldownDuration;
         BulletDamage = bulletDamage;
+        PointValue = pointValue;
     }
 
-    public static Enemy CreateMelee(Vector2 startPosition, int maxHealth, int contactDamage)
+    public static Enemy CreateMelee(Vector2 startPosition, int maxHealth, int contactDamage, int pointValue)
     {
         return new Enemy(
             EnemyType.Melee, startPosition, maxHealth, contactDamage,
             GameConstants.EnemySpeed, GameConstants.EnemyWidth, GameConstants.EnemyHeight,
-            GameConstants.EnemyHitboxRadius, engageRange: 0f, attackCooldownDuration: 0f, bulletDamage: 0);
+            GameConstants.EnemyHitboxRadius, engageRange: 0f, attackCooldownDuration: 0f,
+            bulletDamage: 0, pointValue);
     }
 
-    public static Enemy CreateRanged(Vector2 startPosition, int maxHealth, int contactDamage, int bulletDamage)
+    public static Enemy CreateRanged(Vector2 startPosition, int maxHealth, int contactDamage, int bulletDamage, int pointValue)
     {
         return new Enemy(
             EnemyType.Ranged, startPosition, maxHealth, contactDamage,
             GameConstants.RangedEnemySpeed, GameConstants.RangedEnemyWidth, GameConstants.RangedEnemyHeight,
             GameConstants.RangedEnemyHitboxRadius, GameConstants.RangedEnemyEngageRange,
-            GameConstants.RangedEnemyAttackCooldown, bulletDamage);
+            GameConstants.RangedEnemyAttackCooldown, bulletDamage, pointValue);
     }
 
     public bool CanAttack => State != EnemyState.Knockback && _contactCooldownTimer <= 0f;

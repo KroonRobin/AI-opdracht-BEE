@@ -6,5 +6,6 @@ public enum GameState
     HighScores,
     Playing,
     Paused,
+    EnteringName,
     GameOver
 }

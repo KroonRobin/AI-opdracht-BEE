@@ -5,6 +5,18 @@ using System.Linq;
 
 namespace AI_opdracht_BEE.Systems;
 
+public readonly struct HighScoreEntry
+{
+    public readonly string Name;
+    public readonly int Score;
+
+    public HighScoreEntry(string name, int score)
+    {
+        Name = name;
+        Score = score;
+    }
+}
+
 public static class HighScoreManager
 {
     private const int MaxEntries = 5;
@@ -15,9 +27,9 @@ public static class HighScoreManager
 
     private static readonly string SaveFilePath = Path.Combine(SaveDirectory, "highscores.txt");
 
-    public static List<int> Load()
+    public static List<HighScoreEntry> Load()
     {
-        var scores = new List<int>();
+        var entries = new List<HighScoreEntry>();
 
         try
         {
@@ -25,33 +37,40 @@ public static class HighScoreManager
             {
                 foreach (var line in File.ReadAllLines(SaveFilePath))
                 {
-                    if (int.TryParse(line, out int value))
-                        scores.Add(value);
+                    var parts = line.Split('|');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out int score))
+                        entries.Add(new HighScoreEntry(parts[1], score));
                 }
             }
         }
         catch (IOException)
         {
-            // If reading fails for any reason, just start from an empty list rather than crashing.
         }
 
-        return scores;
+        return entries;
     }
 
-    // Adds a score, trims to the top 5, saves to disk, and returns the updated list.
-    public static List<int> AddScore(List<int> currentScores, int newScore)
+    // True if this score would actually earn a spot on the list (top 5, or fewer than 5 saved so far).
+    public static bool Qualifies(List<HighScoreEntry> currentEntries, int score)
     {
-        var updated = new List<int>(currentScores) { newScore };
-        updated = updated.OrderByDescending(s => s).Take(MaxEntries).ToList();
+        if (currentEntries.Count < MaxEntries)
+            return true;
+
+        return score >= currentEntries.Min(e => e.Score);
+    }
+
+    public static List<HighScoreEntry> AddScore(List<HighScoreEntry> currentEntries, HighScoreEntry newEntry)
+    {
+        var updated = new List<HighScoreEntry>(currentEntries) { newEntry };
+        updated = updated.OrderByDescending(e => e.Score).Take(MaxEntries).ToList();
 
         try
         {
             Directory.CreateDirectory(SaveDirectory);
-            File.WriteAllLines(SaveFilePath, updated.Select(s => s.ToString()));
+            File.WriteAllLines(SaveFilePath, updated.Select(e => $"{e.Score}|{e.Name}"));
         }
         catch (IOException)
         {
-            // Saving is best-effort — a failed write shouldn't crash the game.
         }
 
         return updated;

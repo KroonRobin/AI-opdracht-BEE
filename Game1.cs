@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -46,7 +47,6 @@ public class Game1 : Game
     private int _upgradesDroppedThisRound;
     private int _lastTrackedLevel;
 
-    private List<int> _highScores = new();
     private int _selectedMenuIndex;
     private static readonly string[] MenuOptions = { "Start", "High Scores", "Exit" };
 
@@ -60,6 +60,12 @@ public class Game1 : Game
     private int _selectedPauseIndex;
     private static readonly string[] PauseOptions = { "Continue", "Main Menu" };
     private Texture2D _pauseBackgroundImage;   // separate from menu/game-over, swappable later same as the others
+
+    private List<HighScoreEntry> _highScores = new();
+    private StringBuilder _nameInput = new StringBuilder();
+    private const int MaxNameLength = 12;
+    private float _cursorBlinkTimer;
+    private bool _showCursor = true;
 
     private RenderTarget2D _renderTarget;
     private Rectangle _renderDestinationRect;
@@ -77,6 +83,8 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
+        Window.TextInput += OnTextInput;
+
         var displayMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
         _graphics.PreferredBackBufferWidth = displayMode.Width;
         _graphics.PreferredBackBufferHeight = displayMode.Height;
@@ -182,6 +190,10 @@ public class Game1 : Game
                 UpdatePauseScreen(currentKeyboardState, currentMouseState);
                 break;
 
+            case GameState.EnteringName:
+                UpdateNameEntry(gameTime, currentKeyboardState);
+                break;
+
             case GameState.GameOver:
                 UpdateGameOverScreen(currentKeyboardState, currentMouseState);
                 break;
@@ -206,6 +218,7 @@ public class Game1 : Game
         }
 
         _player.Update(gameTime, Keyboard.GetState());
+        _player.FaceTowardMouse(_virtualMousePosition);
 
         // --- Mouse aim/shoot ---
         _fireCooldown -= (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -271,11 +284,13 @@ public class Game1 : Game
         }
         // --- end ranged enemy fire requests ---
 
-        var deathPositions = CollisionManager.CheckBulletsVsEnemies(_bullets, _enemies);
-        _score += deathPositions.Count;
+        var deaths = CollisionManager.CheckBulletsVsEnemies(_bullets, _enemies);
 
-        foreach (var deathPosition in deathPositions)
-            TryDropPickup(deathPosition);
+        foreach (var death in deaths)
+        {
+            _score += death.Points;
+            TryDropPickup(death.Position);
+        }
 
         CollisionManager.CheckEnemiesVsPlayer(_enemies, _player);
         CollisionManager.CheckEnemyBulletsVsPlayer(_enemyBullets, _player);
@@ -291,8 +306,15 @@ public class Game1 : Game
 
         if (!_player.IsAlive)
         {
-            _highScores = HighScoreManager.AddScore(_highScores, _score);
-            _gameState = GameState.GameOver;
+            if (HighScoreManager.Qualifies(_highScores, _score))
+            {
+                _nameInput.Clear();
+                _gameState = GameState.EnteringName;
+            }
+            else
+            {
+                _gameState = GameState.GameOver;
+            }
         }
     }
 
@@ -563,15 +585,17 @@ public class Game1 : Game
     private UpgradeType PickWeightedUpgradeType()
     {
         var weightedOptions = new List<(UpgradeType type, float weight)>
-    {
-        (UpgradeType.Damage, GameConstants.DamageDropWeight),
-        (UpgradeType.FireRate, GameConstants.FireRateDropWeight),
-        (UpgradeType.MaxHealth, GameConstants.MaxHealthDropWeight),
-        (UpgradeType.Heal, GameConstants.HealDropWeight),
-    };
+        {
+            (UpgradeType.Damage, GameConstants.DamageDropWeight),
+            (UpgradeType.FireRate, GameConstants.FireRateDropWeight),
+            (UpgradeType.MaxHealth, GameConstants.MaxHealthDropWeight),
+        };
 
         if (!_player.IsAtMaxSpeed)
             weightedOptions.Add((UpgradeType.MoveSpeed, GameConstants.MoveSpeedDropWeight));
+
+        if (_player.Health < _player.MaxHealth)
+            weightedOptions.Add((UpgradeType.Heal, GameConstants.HealDropWeight));
 
         float totalWeight = weightedOptions.Sum(o => o.weight);
         float roll = (float)(_random.NextDouble() * totalWeight);
@@ -648,11 +672,14 @@ public class Game1 : Game
         if (_gameState == GameState.Paused)
             DrawPauseScreen();
 
-        if (_levelManager.ShowBanner)
-            DrawRoundBanner();
+        if (_gameState == GameState.EnteringName)
+            DrawNameEntryScreen();
 
         if (_gameState == GameState.GameOver)
             DrawGameOverScreen();
+
+        if (_levelManager.ShowBanner)
+            DrawRoundBanner();
 
         _spriteBatch.End();
 
@@ -779,7 +806,7 @@ public class Game1 : Game
         {
             for (int i = 0; i < _highScores.Count; i++)
             {
-                string entryText = $"{i + 1}. {_highScores[i]}";
+                string entryText = $"{i + 1}. {_highScores[i].Name} - {_highScores[i].Score}";
                 Vector2 entrySize = _font.MeasureString(entryText);
                 Vector2 entryPos = new Vector2(
                     GameConstants.RoomWidth / 2f - entrySize.X / 2f,
@@ -832,7 +859,7 @@ public class Game1 : Game
         const string title = "GAME OVER";
         string scoreText = $"Score: {_score}";
 
-        bool isNewHighScore = _highScores.Count > 0 && _highScores[0] == _score;
+        bool isNewHighScore = _highScores.Count > 0 && _highScores[0].Score == _score;
         string highScoreText = isNewHighScore ? "New High Score!" : "";
 
         Vector2 titleSize = _font.MeasureString(title);
@@ -867,6 +894,113 @@ public class Game1 : Game
 
             _spriteBatch.DrawString(_font, optionText, new Vector2(rect.X, rect.Y), optionColor);
         }
+    }
+
+    private void OnTextInput(object sender, TextInputEventArgs e)
+    {
+        if (_gameState != GameState.EnteringName)
+            return;
+
+        if (e.Key == Keys.Back)
+        {
+            if (_nameInput.Length > 0)
+                _nameInput.Remove(_nameInput.Length - 1, 1);
+            return;
+        }
+
+        char typedChar = e.Character;
+
+        if (char.IsControl(typedChar) || typedChar == '|')
+            return;
+
+        if (_nameInput.Length < MaxNameLength)
+            _nameInput.Append(typedChar);
+    }
+
+    private void UpdateNameEntry(GameTime gameTime, KeyboardState currentKeyboardState)
+    {
+        _cursorBlinkTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+        if (_cursorBlinkTimer >= 0.5f)
+        {
+            _cursorBlinkTimer = 0f;
+            _showCursor = !_showCursor;
+        }
+
+        bool enterPressed =
+            currentKeyboardState.IsKeyDown(Keys.Enter) &&
+            _previousKeyboardState.IsKeyUp(Keys.Enter);
+
+        if (!enterPressed)
+            return;
+
+        string finalName = _nameInput.Length > 0 ? _nameInput.ToString() : "Player";
+        _highScores = HighScoreManager.AddScore(_highScores, new HighScoreEntry(finalName, _score));
+        _gameState = GameState.GameOver;
+    }
+
+    private void DrawNameEntryScreen()
+    {
+        DrawBackgroundOverlay(_gameOverBackgroundImage);
+
+        const string title = "NEW HIGH SCORE!";
+        Vector2 titleSize = _font.MeasureString(title);
+        Vector2 titlePos = new Vector2(
+            GameConstants.RoomWidth / 2f - titleSize.X / 2f,
+            GameConstants.RoomHeight / 2f - 160);
+
+        _spriteBatch.DrawString(_font, title, titlePos, Color.Gold);
+
+        string scoreText = $"Score: {_score}";
+        Vector2 scoreSize = _font.MeasureString(scoreText);
+        Vector2 scorePos = new Vector2(
+            GameConstants.RoomWidth / 2f - scoreSize.X / 2f,
+            GameConstants.RoomHeight / 2f - 110);
+
+        _spriteBatch.DrawString(_font, scoreText, scorePos, Color.White);
+
+        const string prompt = "Enter your name:";
+        Vector2 promptSize = _font.MeasureString(prompt);
+        Vector2 promptPos = new Vector2(
+            GameConstants.RoomWidth / 2f - promptSize.X / 2f,
+            GameConstants.RoomHeight / 2f - 60);
+
+        _spriteBatch.DrawString(_font, prompt, promptPos, Color.White);
+
+        const int boxWidth = 320;
+        const int boxHeight = 40;
+        var boxRect = new Rectangle(
+            (int)(GameConstants.RoomWidth / 2f - boxWidth / 2f),
+            (int)(GameConstants.RoomHeight / 2f - 20),
+            boxWidth, boxHeight);
+
+        const int borderThickness = 2;
+        var borderRect = new Rectangle(
+            boxRect.X - borderThickness,
+            boxRect.Y - borderThickness,
+            boxRect.Width + borderThickness * 2,
+            boxRect.Height + borderThickness * 2);
+
+        _spriteBatch.Draw(_pixel, borderRect, Color.White);
+        _spriteBatch.Draw(_pixel, boxRect, Color.Black);
+
+        string displayText = _nameInput.ToString();
+        if (_showCursor)
+            displayText += "|";
+
+        Vector2 textSize = _font.MeasureString(displayText);
+        Vector2 textPos = new Vector2(
+            boxRect.X + 10,
+            boxRect.Y + boxRect.Height / 2f - textSize.Y / 2f);
+
+        _spriteBatch.DrawString(_font, displayText, textPos, Color.White);
+
+        const string confirmHint = "Press ENTER to confirm";
+        Vector2 hintSize = _font.MeasureString(confirmHint);
+        Vector2 hintPos = new Vector2(
+            GameConstants.RoomWidth / 2f - hintSize.X / 2f,
+            GameConstants.RoomHeight / 2f + 60);
+
+        _spriteBatch.DrawString(_font, confirmHint, hintPos, Color.Gray);
     }
 
     private void DrawBackgroundOverlay(Texture2D backgroundImage)

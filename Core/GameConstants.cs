@@ -35,8 +35,13 @@ public static class GameConstants
     public const float RoundTransitionDelay = 5f;          // wait after last enemy dies, before announcing next round
     public const float RoundAnnouncementDuration = 3f;      // how long the round banner stays visible
 
+    // Score values
+    public const int MeleeEnemyBasePoints = 100;
+    public const int RangedEnemyBasePoints = 250;      // ranged enemies are rarer/tougher, worth more
+    public const float EnemyPointsGrowthPerLevel = 0.15f;   // same growth rate as health/damage, for consistency
+
     // Enemy standard
-    public const float EnemySpeed = 90f;
+    public const float EnemySpeed = 110f;
     public const int EnemyWidth = 22;
     public const int EnemyHeight = 32;
     public const int EnemyHitboxRadius = 11;
@@ -81,11 +86,11 @@ public static class GameConstants
     public const float SpawnRampPerSecond = 0.01f;    // how fast difficulty climbs
 
     // Pickups / Upgrades
-    public const float PickupDropChance = 0.1f;   // 35% chance per enemy kill
+    public const float PickupDropChance = 0.15f;   // 15% chance per enemy kill
     public const int PickupSize = 16;
     public const int PickupHitboxRadius = 10;
 
-    public const int DamageUpgradeAmount = 3;
+    public const int DamageUpgradeAmount = 2;
     public const float FireRateUpgradeMultiplier = 0.85f;  // 15% faster per pickup
     public const float MinFireInterval = 0.1f;             // hard floor, prevents infinite fire rate stacking
     public const float MoveSpeedUpgradeAmount = 50f;
@@ -93,13 +98,13 @@ public static class GameConstants
     public const int MaxUpgradesPerRound = 2;
 
     public const int HealAmount = 50;
-    public const float HealDropWeight = 1.0f;
 
     // Upgrade drop weights — higher number = more likely. Don't need to sum to any particular total.
     public const float DamageDropWeight = 1.0f;
     public const float FireRateDropWeight = 1.0f;
     public const float MoveSpeedDropWeight = 1.0f;
-    public const float MaxHealthDropWeight = 0.3f;
+    public const float HealDropWeight = 1.0f;
+    public const float MaxHealthDropWeight = 0.5f;
 
     // Pickup lifetime
     public const float PickupLifetime = 8f;        // total seconds before disappearing

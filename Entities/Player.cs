@@ -41,8 +41,6 @@ public class Player
             // Without this, holding W+D gives you ~1.41x speed.
             input.Normalize();
             Position += input * MoveSpeed * delta;
-
-            UpdateFacing(input);
         }
 
         ClampToRoom();
@@ -55,6 +53,20 @@ public class Player
             FacingDirection = input.Y > 0 ? Facing.Down : Facing.Up;
         else
             FacingDirection = input.X > 0 ? Facing.Right : Facing.Left;
+    }
+
+    public void FaceTowardMouse(Vector2 mouseWorldPosition)
+    {
+        Vector2 aimOrigin = Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
+        Vector2 direction = mouseWorldPosition - aimOrigin;
+
+        if (direction == Vector2.Zero)
+            return;
+
+        if (System.Math.Abs(direction.Y) > System.Math.Abs(direction.X))
+            FacingDirection = direction.Y > 0 ? Facing.Down : Facing.Up;
+        else
+            FacingDirection = direction.X > 0 ? Facing.Right : Facing.Left;
     }
 
     private void ClampToRoom()

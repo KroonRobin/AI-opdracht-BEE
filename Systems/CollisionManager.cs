@@ -5,11 +5,23 @@ using AI_opdracht_BEE.Entities;
 
 namespace AI_opdracht_BEE.Systems;
 
+public readonly struct EnemyDeath
+{
+    public readonly Vector2 Position;
+    public readonly int Points;
+
+    public EnemyDeath(Vector2 position, int points)
+    {
+        Position = position;
+        Points = points;
+    }
+}
+
 public static class CollisionManager
 {
-    public static List<Vector2> CheckBulletsVsEnemies(List<Bullet> bullets, List<Enemy> enemies)
+    public static List<EnemyDeath> CheckBulletsVsEnemies(List<Bullet> bullets, List<Enemy> enemies)
     {
-        var deathPositions = new List<Vector2>();
+        var deaths = new List<EnemyDeath>();
 
         foreach (var bullet in bullets)
         {
@@ -30,14 +42,14 @@ public static class CollisionManager
                     bullet.Deactivate();
 
                     if (!enemy.IsAlive)
-                        deathPositions.Add(enemy.Position);
+                        deaths.Add(new EnemyDeath(enemy.Position, enemy.PointValue));
 
                     break;
                 }
             }
         }
 
-        return deathPositions;
+        return deaths;
     }
 
     public static void CheckEnemiesVsPlayer(List<Enemy> enemies, Player player)
