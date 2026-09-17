@@ -25,6 +25,9 @@ public class Game1 : Game
     private MouseState _currentMouseState;
     private MouseState _previousMouseState;
 
+    private MeleeAttackVisual _meleeAttackVisual;
+    private float _meleeCooldown;
+
     private List<Enemy> _enemies = new();
     private EnemySpawner _enemySpawner;
 
@@ -141,6 +144,8 @@ public class Game1 : Game
         _levelManager = new LevelManager();
         _score = 0;
         _fireCooldown = 0f;
+        _meleeAttackVisual = null;
+        _meleeCooldown = 0f;
         _gameState = GameState.Playing;
         _currentBulletDamage = GameConstants.BulletDamage;
         _currentFireInterval = GameConstants.BaseFireInterval;
@@ -240,6 +245,34 @@ public class Game1 : Game
                 _fireCooldown = _currentFireInterval;
             }
         }
+
+        // --- Melee attack ---
+        _meleeCooldown -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        bool rightClicked =
+            _currentMouseState.RightButton == ButtonState.Pressed &&
+            _previousMouseState.RightButton == ButtonState.Released;
+
+        if (rightClicked && _meleeCooldown <= 0f)
+        {
+            TriggerMeleeAttack();
+            _meleeCooldown = GameConstants.MeleeAttackCooldown;
+        }
+
+        if (_meleeAttackVisual != null)
+        {
+            var meleeDeaths = _meleeAttackVisual.Update(gameTime, _enemies);
+
+            foreach (var death in meleeDeaths)
+            {
+                _score += death.Points;
+                TryDropPickup(death.Position);
+            }
+
+            if (!_meleeAttackVisual.IsActive)
+                _meleeAttackVisual = null;
+        }
+        // --- end melee attack ---
 
         foreach (var bullet in _bullets)
             bullet.Update(gameTime);
@@ -582,6 +615,29 @@ public class Game1 : Game
         _upgradesDroppedThisRound++;
     }
 
+    private void TriggerMeleeAttack()
+    {
+        Vector2 attackOrigin = _player.Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
+        Vector2 aimDirection = _virtualMousePosition - attackOrigin;
+
+        if (aimDirection == Vector2.Zero)
+            aimDirection = new Vector2(0, 1);
+
+        float rawAngle = (float)Math.Atan2(aimDirection.Y, aimDirection.X);
+        float centerAngle = SnapAngleToCompass(rawAngle);
+        float halfArc = MathHelper.ToRadians(GameConstants.MeleeAttackArcDegrees / 2f);
+
+        _meleeAttackVisual = new MeleeAttackVisual(
+            attackOrigin, centerAngle, halfArc, GameConstants.MeleeAttackRadius,
+            _currentBulletDamage, _player.Position);
+    }
+
+    private float SnapAngleToCompass(float angle)
+    {
+        float step = MathHelper.PiOver4; // 45° in radians
+        return (float)Math.Round(angle / step) * step;
+    }
+
     private UpgradeType PickWeightedUpgradeType()
     {
         var weightedOptions = new List<(UpgradeType type, float weight)>
@@ -657,6 +713,8 @@ public class Game1 : Game
 
         foreach (var enemy in _enemies)
             enemy.Draw(_spriteBatch, _pixel);
+
+        _meleeAttackVisual?.Draw(_spriteBatch, _pixel);
 
         foreach (var pickup in _pickups)
             pickup.Draw(_spriteBatch, _pixel, _font);

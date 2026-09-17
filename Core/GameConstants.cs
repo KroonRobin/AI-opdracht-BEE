@@ -14,6 +14,20 @@ public static class GameConstants
     public const int PlayerHitboxRadius = 10;   // collision circle at the feet
     public const int PlayerMaxHealth = 100;   // was 5 — update the existing line
 
+    // Melee attack
+    public const float MeleeAttackRadius = 60f;
+    public const float MeleeAttackArcDegrees = 90f;   // quarter circle
+    public const float MeleeAttackDuration = 0.25f;   // animation length
+    public const float MeleeAttackCooldown = 0.35f;   // slightly longer than the animation, so swings can't overlap
+    public const int MeleeAttackDotSize = 8;
+
+    // Bullet
+    public const float BulletSpeed = 800f;
+    public const int BulletRadius = 4;
+
+    // Shooting
+    public const float BaseFireInterval = 1.0f;  // seconds between shots at base fire rate
+
     // Health bar color thresholds
     public const float HealthBarYellowThreshold = 0.5f;
     public const float HealthBarRedThreshold = 0.25f;
@@ -72,13 +86,6 @@ public static class GameConstants
     public const float EnemyKnockbackDuration = 0.25f;  // seconds spent flying backward
     public const float EnemyAttackCooldown = 0.6f;      // seconds before it can hit you again after recovering
     public const int EnemyContactDamage = 8;
-
-    // Bullet
-    public const float BulletSpeed = 800f;
-    public const int BulletRadius = 4;
-
-    // Shooting
-    public const float BaseFireInterval = 1.0f;  // seconds between shots at base fire rate
 
     // Spawning
     public const float InitialSpawnInterval = 1.5f;   // seconds between spawns
