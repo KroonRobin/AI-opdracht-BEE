@@ -24,6 +24,7 @@ public static class GameConstants
     // Bullet
     public const float BulletSpeed = 800f;
     public const int BulletRadius = 4;
+    public const float ArrowSpriteScale = 2f;   
 
     // Shooting
     public const float BaseFireInterval = 1.0f;  // seconds between shots at base fire rate
@@ -91,6 +92,8 @@ public static class GameConstants
     // Enemy bullets
     public const float EnemyBulletSpeed = 400f;
     public const int EnemyBulletRadius = 5;
+    public const float EnemyOrbSpriteScale = 1.3f;   // tune to taste once you see it in-game
+    public const float EnemyOrbSpinSpeed = 10f;     // radians per second — roughly one full spin/sec
 
     // Enemy health
     public const int EnemyMaxHealth = 10;

@@ -79,6 +79,9 @@ public class Game1 : Game
     private int _renderOffsetY;
     private Vector2 _virtualMousePosition;
 
+    private Texture2D _arrowTexture;
+    private Texture2D _enemyOrbTexture;
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -111,6 +114,9 @@ public class Game1 : Game
 
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
+
+        _arrowTexture = Content.Load<Texture2D>("Sprites/arrow");
+        _enemyOrbTexture = Content.Load<Texture2D>("Sprites/enemy_projectile");
 
         _renderTarget = new RenderTarget2D(GraphicsDevice, GameConstants.RoomWidth, GameConstants.RoomHeight);
 
@@ -247,7 +253,8 @@ public class Game1 : Game
                 direction.Normalize();
                 _bullets.Add(new Bullet(
                     shootOrigin, direction, _currentBulletDamage,
-                    GameConstants.BulletSpeed, GameConstants.BulletRadius, Color.Gold));
+                    GameConstants.BulletSpeed, GameConstants.BulletRadius, Color.White, _arrowTexture,
+                    GameConstants.ArrowSpriteScale, spinSpeed: 0f, rotationOffset: MathHelper.ToRadians(45f)));
                 _fireCooldown = _currentFireInterval;
             }
         }
@@ -316,7 +323,8 @@ public class Game1 : Game
                 direction.Normalize();
                 _enemyBullets.Add(new Bullet(
                     enemy.ShootOrigin, direction, enemy.BulletDamage,
-                    GameConstants.EnemyBulletSpeed, GameConstants.EnemyBulletRadius, Color.Cyan));
+                        GameConstants.EnemyBulletSpeed, GameConstants.EnemyBulletRadius, Color.White, _enemyOrbTexture,
+                        GameConstants.EnemyOrbSpriteScale, spinSpeed: GameConstants.EnemyOrbSpinSpeed));
             }
 
             enemy.ConsumeFireRequest();
