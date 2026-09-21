@@ -19,6 +19,9 @@ public class Player
     public bool IsAtMaxSpeed => MoveSpeed >= GameConstants.PlayerMaxSpeedCap;
     public int MaxHealth { get; private set; } = GameConstants.PlayerMaxHealth;
 
+    private int _currentFrame;
+    private float _animationTimer;
+
     public Player(Vector2 startPosition)
     {
         Position = startPosition;
@@ -35,15 +38,34 @@ public class Player
         if (keyboard.IsKeyDown(Keys.A) || keyboard.IsKeyDown(Keys.Left)) input.X -= 1;
         if (keyboard.IsKeyDown(Keys.D) || keyboard.IsKeyDown(Keys.Right)) input.X += 1;
 
-        if (input != Vector2.Zero)
+        bool isMoving = input != Vector2.Zero;
+
+        if (isMoving)
         {
-            // Normalize so diagonal movement isn't faster than straight movement.
-            // Without this, holding W+D gives you ~1.41x speed.
             input.Normalize();
             Position += input * MoveSpeed * delta;
         }
 
         ClampToRoom();
+        UpdateAnimation(delta, isMoving);
+    }
+
+    private void UpdateAnimation(float delta, bool isMoving)
+    {
+        if (!isMoving)
+        {
+            _currentFrame = 0;
+            _animationTimer = 0f;
+            return;
+        }
+
+        _animationTimer += delta;
+
+        if (_animationTimer >= GameConstants.PlayerAnimationFrameDuration)
+        {
+            _animationTimer -= GameConstants.PlayerAnimationFrameDuration;
+            _currentFrame = (_currentFrame + 1) % GameConstants.PlayerAnimationFrameCount;
+        }
     }
 
     private void UpdateFacing(Vector2 input)
@@ -103,32 +125,55 @@ public class Player
     public Vector2 HitboxCenter => Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
     public float HitboxRadius => GameConstants.PlayerHitboxRadius;
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel)
+    public void Draw(SpriteBatch spriteBatch, Texture2D frontTexture, Texture2D backTexture, Texture2D sideTexture, Texture2D pixel)
     {
-        // Placeholder: a rectangle drawn UPWARD from the feet position.
-        var rect = new Rectangle(
-            (int)(Position.X - GameConstants.PlayerWidth / 2f),
-            (int)(Position.Y - GameConstants.PlayerHeight),
-            GameConstants.PlayerWidth,
-            GameConstants.PlayerHeight);
+        Texture2D texture;
+        SpriteEffects effects = SpriteEffects.None;
 
-        spriteBatch.Draw(pixel, rect, Color.CornflowerBlue);
-
-        // Small marker showing which way you're facing (helps while testing)
-        var facingOffset = FacingDirection switch
+        switch (FacingDirection)
         {
-            Facing.Up => new Point(0, -6),
-            Facing.Down => new Point(0, 6),
-            Facing.Left => new Point(-8, 0),
-            Facing.Right => new Point(8, 0),
-            _ => Point.Zero
-        };
+            case Facing.Down:
+                texture = frontTexture;
+                break;
 
-        var marker = new Rectangle(
-            (int)Position.X - 3 + facingOffset.X,
-            (int)(Position.Y - GameConstants.PlayerHeight / 2f) - 3 + facingOffset.Y,
-            6, 6);
+            case Facing.Up:
+                texture = backTexture;
+                break;
 
-        spriteBatch.Draw(pixel, marker, Color.White);
+            case Facing.Left:
+                texture = sideTexture;
+                effects = SpriteEffects.FlipHorizontally;
+                break;
+
+            default: // Right
+                texture = sideTexture;
+                break;
+        }
+
+        if (texture == null)
+        {
+            var fallbackRect = new Rectangle(
+                (int)(Position.X - GameConstants.PlayerWidth / 2f),
+                (int)(Position.Y - GameConstants.PlayerHeight),
+                GameConstants.PlayerWidth,
+                GameConstants.PlayerHeight);
+
+            spriteBatch.Draw(pixel, fallbackRect, Color.CornflowerBlue);
+            return;
+        }
+
+        var sourceRect = new Rectangle(
+            _currentFrame * GameConstants.PlayerSpriteFrameWidth,
+            0,
+            GameConstants.PlayerSpriteFrameWidth,
+            GameConstants.PlayerSpriteFrameHeight);
+
+        var destRect = new Rectangle(
+            (int)(Position.X - GameConstants.PlayerSpriteFrameWidth * GameConstants.PlayerSpriteScale / 2f),
+            (int)(Position.Y - GameConstants.PlayerSpriteFrameHeight * GameConstants.PlayerSpriteScale),
+            (int)(GameConstants.PlayerSpriteFrameWidth * GameConstants.PlayerSpriteScale),
+            (int)(GameConstants.PlayerSpriteFrameHeight * GameConstants.PlayerSpriteScale));
+
+        spriteBatch.Draw(texture, destRect, sourceRect, Color.White, 0f, Vector2.Zero, effects, 0f);
     }
 }

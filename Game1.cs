@@ -79,6 +79,10 @@ public class Game1 : Game
     private int _renderOffsetY;
     private Vector2 _virtualMousePosition;
 
+    private Texture2D _playerFrontTexture;
+    private Texture2D _playerBackTexture;
+    private Texture2D _playerSideTexture;
+
     private Texture2D _arrowTexture;
     private Texture2D _enemyOrbTexture;
 
@@ -117,6 +121,10 @@ public class Game1 : Game
 
         _arrowTexture = Content.Load<Texture2D>("Sprites/arrow");
         _enemyOrbTexture = Content.Load<Texture2D>("Sprites/enemy_projectile");
+
+        _playerFrontTexture = Content.Load<Texture2D>("Sprites/character_front");
+        _playerBackTexture = Content.Load<Texture2D>("Sprites/character_back");
+        _playerSideTexture = Content.Load<Texture2D>("Sprites/character_side");
 
         _renderTarget = new RenderTarget2D(GraphicsDevice, GameConstants.RoomWidth, GameConstants.RoomHeight);
 
@@ -717,7 +725,7 @@ public class Game1 : Game
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-        _player.Draw(_spriteBatch, _pixel);
+        _player.Draw(_spriteBatch, _playerFrontTexture, _playerBackTexture, _playerSideTexture, _pixel);
 
         foreach (var bullet in _bullets)
             bullet.Draw(_spriteBatch, _pixel);

@@ -10,9 +10,15 @@ public static class GameConstants
     public const float PlayerSpeed = 220f;      // pixels per second
     public const float PlayerMaxSpeedCap = 800f;   // hard ceiling; tune to taste once you test it
     public const int PlayerWidth = 24;
-    public const int PlayerHeight = 40;         // taller than wide, like a 3/4 character sprite
+    public const int PlayerHeight = 39;         // taller than wide, like a 3/4 character sprite
     public const int PlayerHitboxRadius = 10;   // collision circle at the feet
     public const int PlayerMaxHealth = 100;   // was 5 — update the existing line
+
+    public const float PlayerSpriteScale = 2.5f;   
+    public const int PlayerSpriteFrameWidth = 24;
+    public const int PlayerSpriteFrameHeight = 39;
+    public const int PlayerAnimationFrameCount = 4;
+    public const float PlayerAnimationFrameDuration = 0.2f;
 
     // Melee attack
     public const float MeleeAttackRadius = 60f;
