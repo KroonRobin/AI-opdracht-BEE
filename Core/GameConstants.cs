@@ -85,7 +85,7 @@ public static class GameConstants
     public const int RangedEnemyBaseContactDamage = 6;
     public const int RangedEnemyBaseBulletDamage = 12;
     public const float RangedEnemyEngageRange = RoomWidth / 3f;
-    public const float RangedEnemyAttackCooldown = 1.2f;
+    public const float RangedEnemyAttackCooldown = 1.5f;
     public const float RangedEnemySpawnChance = 0.3f;              // 30% of spawns are ranged
     public const int RangedEnemyUnlockRound = 5;
 
