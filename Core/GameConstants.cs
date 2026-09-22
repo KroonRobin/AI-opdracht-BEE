@@ -130,6 +130,10 @@ public static class GameConstants
 
     public const int HealAmount = 50;
 
+    public const float PickupIconScale = 1.5f;    // tune once you see it, same idea as your other sprites
+    public const float PickupBobAmplitude = 3f;
+    public const float PickupBobPeriod = 1f;    // seconds for one full up-down cycle
+
     // Upgrade drop weights — higher number = more likely. Don't need to sum to any particular total.
     public const float DamageDropWeight = 1.0f;
     public const float FireRateDropWeight = 1.0f;

@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using AI_opdracht_BEE.Core;
@@ -10,12 +11,14 @@ public class Pickup
     public UpgradeType Type { get; }
     public bool IsActive { get; private set; } = true;
 
+    private readonly Texture2D _icon;
     private float _lifeTimer;
 
-    public Pickup(Vector2 position, UpgradeType type)
+    public Pickup(Vector2 position, UpgradeType type, Texture2D icon = null)
     {
         Position = position;
         Type = type;
+        _icon = icon;
         _lifeTimer = GameConstants.PickupLifetime;
     }
 
@@ -41,15 +44,14 @@ public class Pickup
         get
         {
             if (_lifeTimer > GameConstants.PickupBlinkDuration)
-                return true; // still in the solid, non-blinking phase
+                return true;
 
             float timeIntoBlinkWindow = GameConstants.PickupBlinkDuration - _lifeTimer;
-            int totalIntervals = GameConstants.PickupBlinkCount * 2; // each blink = one "on" + one "off"
+            int totalIntervals = GameConstants.PickupBlinkCount * 2;
             float intervalLength = GameConstants.PickupBlinkDuration / totalIntervals;
 
             int currentInterval = (int)(timeIntoBlinkWindow / intervalLength);
 
-            // Even intervals = visible ("on"), odd intervals = hidden ("off")
             return currentInterval % 2 == 0;
         }
     }
@@ -59,9 +61,27 @@ public class Pickup
         if (!IsVisible)
             return;
 
+        float elapsed = GameConstants.PickupLifetime - _lifeTimer;
+        float bobPhase = elapsed / GameConstants.PickupBobPeriod * MathHelper.TwoPi;
+        float bobOffset = (float)Math.Sin(bobPhase) * GameConstants.PickupBobAmplitude;
+
+        Vector2 drawPosition = new Vector2(Position.X, Position.Y + bobOffset);
+
+        if (_icon != null)
+        {
+            var destRect = new Rectangle(
+                (int)(drawPosition.X - _icon.Width * GameConstants.PickupIconScale / 2f),
+                (int)(drawPosition.Y - _icon.Height * GameConstants.PickupIconScale / 2f),
+                (int)(_icon.Width * GameConstants.PickupIconScale),
+                (int)(_icon.Height * GameConstants.PickupIconScale));
+
+            spriteBatch.Draw(_icon, destRect, Color.White);
+            return;
+        }
+
         var rect = new Rectangle(
-            (int)(Position.X - GameConstants.PickupSize / 2f),
-            (int)(Position.Y - GameConstants.PickupSize / 2f),
+            (int)(drawPosition.X - GameConstants.PickupSize / 2f),
+            (int)(drawPosition.Y - GameConstants.PickupSize / 2f),
             GameConstants.PickupSize,
             GameConstants.PickupSize);
 
@@ -70,8 +90,8 @@ public class Pickup
         string label = LabelFor(Type);
         Vector2 labelSize = font.MeasureString(label);
         Vector2 labelPos = new Vector2(
-            Position.X - labelSize.X / 2f,
-            Position.Y - GameConstants.PickupSize / 2f - labelSize.Y - 2);
+            drawPosition.X - labelSize.X / 2f,
+            drawPosition.Y - GameConstants.PickupSize / 2f - labelSize.Y - 2);
 
         spriteBatch.DrawString(font, label, labelPos, Color.White);
     }
