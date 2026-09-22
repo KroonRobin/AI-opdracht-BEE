@@ -88,6 +88,7 @@ public class Game1 : Game
 
     private Texture2D _speedPickupTexture;
     private Texture2D _healthPotionTexture;
+    private Texture2D _fireRatePickupTexture;
 
     public Game1()
     {
@@ -131,6 +132,7 @@ public class Game1 : Game
 
         _speedPickupTexture = Content.Load<Texture2D>("Sprites/speed_pwrup");
         _healthPotionTexture = Content.Load<Texture2D>("Sprites/health_potion");
+        _fireRatePickupTexture = Content.Load<Texture2D>("Sprites/firerate_pwrup");
 
         _renderTarget = new RenderTarget2D(GraphicsDevice, GameConstants.RoomWidth, GameConstants.RoomHeight);
 
@@ -643,6 +645,7 @@ public class Game1 : Game
         {
             UpgradeType.MoveSpeed => _speedPickupTexture,
             UpgradeType.Heal => _healthPotionTexture,
+            UpgradeType.FireRate => _fireRatePickupTexture,
             _ => null
         };
 
