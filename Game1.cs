@@ -87,6 +87,7 @@ public class Game1 : Game
     private Texture2D _enemyOrbTexture;
 
     private Texture2D _speedPickupTexture;
+    private Texture2D _healthPotionTexture;
 
     public Game1()
     {
@@ -129,6 +130,7 @@ public class Game1 : Game
         _playerSideTexture = Content.Load<Texture2D>("Sprites/character_side");
 
         _speedPickupTexture = Content.Load<Texture2D>("Sprites/speed_pwrup");
+        _healthPotionTexture = Content.Load<Texture2D>("Sprites/health_potion");
 
         _renderTarget = new RenderTarget2D(GraphicsDevice, GameConstants.RoomWidth, GameConstants.RoomHeight);
 
@@ -637,7 +639,13 @@ public class Game1 : Game
 
         var chosenType = PickWeightedUpgradeType();
 
-        Texture2D icon = chosenType == UpgradeType.MoveSpeed ? _speedPickupTexture : null;
+        Texture2D icon = chosenType switch
+        {
+            UpgradeType.MoveSpeed => _speedPickupTexture,
+            UpgradeType.Heal => _healthPotionTexture,
+            _ => null
+        };
+
         _pickups.Add(new Pickup(position, chosenType, icon));
         _upgradesDroppedThisRound++;
     }
