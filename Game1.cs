@@ -16,6 +16,7 @@ public class Game1 : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
     private SpriteFont _font;
+    private SpriteFont _menuFont;
 
     private Texture2D _pixel;
     private Player _player;
@@ -128,6 +129,7 @@ public class Game1 : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _font = Content.Load<SpriteFont>("DefaultFont");
+        _menuFont = Content.Load<SpriteFont>("MenuFont");
 
         _logoTexture = Content.Load<Texture2D>("Sprites/logo_crowned_pigeon");
 
@@ -623,8 +625,21 @@ public class Game1 : Game
 
     private void UpdateHighScoresScreen(KeyboardState currentKeyboardState, MouseState currentMouseState)
     {
+        float listBottom = GameConstants.RoomHeight / 2f - 80;
+
+        if (_highScores.Count > 0)
+        {
+            Vector2 lastEntrySize = _menuFont.MeasureString($"{_highScores.Count}. {_highScores[^1].Name} - {_highScores[^1].Score}");
+            float lineSpacing = lastEntrySize.Y + 8;
+            listBottom += (_highScores.Count - 1) * lineSpacing + lineSpacing + 20;
+        }
+        else
+        {
+            listBottom += 60;
+        }
+
         Point mousePoint = new Point((int)_virtualMousePosition.X, (int)_virtualMousePosition.Y);
-        Rectangle backRect = GetBackButtonRect();
+        Rectangle backRect = GetBackButtonRect(listBottom);
         _highScoresBackHovered = backRect.Contains(mousePoint);
 
         bool escPressed =
@@ -647,41 +662,41 @@ public class Game1 : Game
 
     private Rectangle GetMenuOptionRect(string text, int index)
     {
-        Vector2 size = _font.MeasureString(text);
+        Vector2 size = _menuFont.MeasureString(text);
         Vector2 pos = new Vector2(
             GameConstants.RoomWidth / 2f - size.X / 2f,
-            GameConstants.RoomHeight / 2f - 40 + index * 40);
+            GameConstants.RoomHeight / 2f - 40 + index * 60);
 
         return new Rectangle((int)pos.X, (int)pos.Y, (int)size.X, (int)size.Y);
     }
 
-    private Rectangle GetBackButtonRect()
+    private Rectangle GetBackButtonRect(float startY)
     {
         const string backText = "Back";
-        Vector2 size = _font.MeasureString(backText);
+        Vector2 size = _menuFont.MeasureString(backText);
         Vector2 pos = new Vector2(
             GameConstants.RoomWidth / 2f - size.X / 2f,
-            GameConstants.RoomHeight / 2f + 120);
+            startY);
 
         return new Rectangle((int)pos.X, (int)pos.Y, (int)size.X, (int)size.Y);
     }
 
     private Rectangle GetGameOverOptionRect(string text, int index)
     {
-        Vector2 size = _font.MeasureString(text);
+        Vector2 size = _menuFont.MeasureString(text);
         Vector2 pos = new Vector2(
             GameConstants.RoomWidth / 2f - size.X / 2f,
-            GameConstants.RoomHeight / 2f + 60 + index * 40);
+            GameConstants.RoomHeight / 2f + 60 + index * 60);
 
         return new Rectangle((int)pos.X, (int)pos.Y, (int)size.X, (int)size.Y);
     }
 
     private Rectangle GetPauseOptionRect(string text, int index)
     {
-        Vector2 size = _font.MeasureString(text);
+        Vector2 size = _menuFont.MeasureString(text);
         Vector2 pos = new Vector2(
             GameConstants.RoomWidth / 2f - size.X / 2f,
-            GameConstants.RoomHeight / 2f - 20 + index * 40);
+            GameConstants.RoomHeight / 2f - 20 + index * 60);
 
         return new Rectangle((int)pos.X, (int)pos.Y, (int)size.X, (int)size.Y);
     }
@@ -936,12 +951,12 @@ public class Game1 : Game
         DrawBackgroundOverlay(_menuBackgroundImage);
 
         const string title = "Dungeon Locked";
-        Vector2 titleSize = _font.MeasureString(title);
+        Vector2 titleSize = _menuFont.MeasureString(title);
         Vector2 titlePos = new Vector2(
             GameConstants.RoomWidth / 2f - titleSize.X / 2f,
             GameConstants.RoomHeight / 2f - 140);
 
-        _spriteBatch.DrawString(_font, title, titlePos, Color.White);
+        _spriteBatch.DrawString(_menuFont, title, titlePos, Color.White);
 
         for (int i = 0; i < MenuOptions.Length; i++)
         {
@@ -951,7 +966,7 @@ public class Game1 : Game
 
             Color optionColor = isSelected ? Color.Red : Color.White;
 
-            _spriteBatch.DrawString(_font, optionText, new Vector2(rect.X, rect.Y), optionColor);
+            _spriteBatch.DrawString(_menuFont, optionText, new Vector2(rect.X, rect.Y), optionColor);
         }
     }
 
@@ -960,48 +975,63 @@ public class Game1 : Game
         DrawBackgroundOverlay(_menuBackgroundImage);
 
         const string title = "HIGH SCORES";
-        Vector2 titleSize = _font.MeasureString(title);
+        Vector2 titleSize = _menuFont.MeasureString(title);
         Vector2 titlePos = new Vector2(
             GameConstants.RoomWidth / 2f - titleSize.X / 2f,
             GameConstants.RoomHeight / 2f - 160);
 
-        _spriteBatch.DrawString(_font, title, titlePos, Color.White);
+        _spriteBatch.DrawString(_menuFont, title, titlePos, Color.White);
 
         if (_highScores.Count == 0)
         {
             const string noneText = "No scores yet";
-            Vector2 noneSize = _font.MeasureString(noneText);
+            Vector2 noneSize = _menuFont.MeasureString(noneText);
             Vector2 nonePos = new Vector2(
                 GameConstants.RoomWidth / 2f - noneSize.X / 2f,
                 GameConstants.RoomHeight / 2f - 80);
 
-            _spriteBatch.DrawString(_font, noneText, nonePos, Color.White);
+            _spriteBatch.DrawString(_menuFont, noneText, nonePos, Color.White);
         }
         else
         {
             for (int i = 0; i < _highScores.Count; i++)
             {
                 string entryText = $"{i + 1}. {_highScores[i].Name} - {_highScores[i].Score}";
-                Vector2 entrySize = _font.MeasureString(entryText);
+                Vector2 entrySize = _menuFont.MeasureString(entryText);
+                float lineSpacing = entrySize.Y + 8;
+
                 Vector2 entryPos = new Vector2(
                     GameConstants.RoomWidth / 2f - entrySize.X / 2f,
-                    GameConstants.RoomHeight / 2f - 80 + i * 32);
+                    GameConstants.RoomHeight / 2f - 80 + i * lineSpacing);
 
-                _spriteBatch.DrawString(_font, entryText, entryPos, Color.White);
+                _spriteBatch.DrawString(_menuFont, entryText, entryPos, Color.White);
             }
         }
 
-        Rectangle backRect = GetBackButtonRect();
+        float listBottom = GameConstants.RoomHeight / 2f - 80;
+
+        if (_highScores.Count > 0)
+        {
+            Vector2 lastEntrySize = _menuFont.MeasureString($"{_highScores.Count}. {_highScores[^1].Name} - {_highScores[^1].Score}");
+            float lineSpacing = lastEntrySize.Y + 8;
+            listBottom += (_highScores.Count - 1) * lineSpacing + lineSpacing + 20; // one past the last line, plus a gap
+        }
+        else
+        {
+            listBottom += 60; // room for the "No scores yet" line
+        }
+
+        Rectangle backRect = GetBackButtonRect(listBottom);
         Color backColor = _highScoresBackHovered ? Color.Red : Color.White;
-        _spriteBatch.DrawString(_font, "Back", new Vector2(backRect.X, backRect.Y), backColor);
+        _spriteBatch.DrawString(_menuFont, "Back", new Vector2(backRect.X, backRect.Y), backColor);
 
         const string escHint = "(or press ESC)";
-        Vector2 escSize = _font.MeasureString(escHint);
+        Vector2 escSize = _menuFont.MeasureString(escHint);
         Vector2 escPos = new Vector2(
             GameConstants.RoomWidth / 2f - escSize.X / 2f,
-            backRect.Y + 30);
+            backRect.Y + backRect.Height + 12);
 
-        _spriteBatch.DrawString(_font, escHint, escPos, Color.Gray);
+        _spriteBatch.DrawString(_menuFont, escHint, escPos, Color.Gray);
     }
 
     private void DrawPauseScreen()
@@ -1009,12 +1039,12 @@ public class Game1 : Game
         DrawBackgroundOverlay(_pauseBackgroundImage);
 
         const string title = "PAUSED";
-        Vector2 titleSize = _font.MeasureString(title);
+        Vector2 titleSize = _menuFont.MeasureString(title);
         Vector2 titlePos = new Vector2(
             GameConstants.RoomWidth / 2f - titleSize.X / 2f,
             GameConstants.RoomHeight / 2f - 100);
 
-        _spriteBatch.DrawString(_font, title, titlePos, Color.White);
+        _spriteBatch.DrawString(_menuFont, title, titlePos, Color.White);
 
         for (int i = 0; i < PauseOptions.Length; i++)
         {
@@ -1024,7 +1054,7 @@ public class Game1 : Game
 
             Color optionColor = isSelected ? Color.Red : Color.White;
 
-            _spriteBatch.DrawString(_font, optionText, new Vector2(rect.X, rect.Y), optionColor);
+            _spriteBatch.DrawString(_menuFont, optionText, new Vector2(rect.X, rect.Y), optionColor);
         }
     }
 
@@ -1037,9 +1067,9 @@ public class Game1 : Game
         bool isNewHighScore = _highScores.Count > 0 && _highScores[0].Score == _score;
         string highScoreText = isNewHighScore ? "New High Score!" : "";
 
-        Vector2 titleSize = _font.MeasureString(title);
-        Vector2 scoreSize = _font.MeasureString(scoreText);
-        Vector2 highScoreSize = _font.MeasureString(highScoreText);
+        Vector2 titleSize = _menuFont.MeasureString(title);
+        Vector2 scoreSize = _menuFont.MeasureString(scoreText);
+        Vector2 highScoreSize = _menuFont.MeasureString(highScoreText);
 
         Vector2 titlePos = new Vector2(
             GameConstants.RoomWidth / 2f - titleSize.X / 2f,
@@ -1053,11 +1083,11 @@ public class Game1 : Game
             GameConstants.RoomWidth / 2f - highScoreSize.X / 2f,
             GameConstants.RoomHeight / 2f + 30);
 
-        _spriteBatch.DrawString(_font, title, titlePos, Color.Red);
-        _spriteBatch.DrawString(_font, scoreText, scorePos, Color.White);
+        _spriteBatch.DrawString(_menuFont, title, titlePos, Color.Red);
+        _spriteBatch.DrawString(_menuFont, scoreText, scorePos, Color.White);
 
         if (isNewHighScore)
-            _spriteBatch.DrawString(_font, highScoreText, highScorePos, Color.Gold);
+            _spriteBatch.DrawString(_menuFont, highScoreText, highScorePos, Color.Gold);
 
         for (int i = 0; i < GameOverOptions.Length; i++)
         {
@@ -1067,7 +1097,7 @@ public class Game1 : Game
 
             Color optionColor = isSelected ? Color.Red : Color.White;
 
-            _spriteBatch.DrawString(_font, optionText, new Vector2(rect.X, rect.Y), optionColor);
+            _spriteBatch.DrawString(_menuFont, optionText, new Vector2(rect.X, rect.Y), optionColor);
         }
     }
 
@@ -1118,34 +1148,30 @@ public class Game1 : Game
         DrawBackgroundOverlay(_gameOverBackgroundImage);
 
         const string title = "NEW HIGH SCORE!";
-        Vector2 titleSize = _font.MeasureString(title);
-        Vector2 titlePos = new Vector2(
-            GameConstants.RoomWidth / 2f - titleSize.X / 2f,
-            GameConstants.RoomHeight / 2f - 160);
-
-        _spriteBatch.DrawString(_font, title, titlePos, Color.Gold);
+        Vector2 titleSize = _menuFont.MeasureString(title);
 
         string scoreText = $"Score: {_score}";
-        Vector2 scoreSize = _font.MeasureString(scoreText);
-        Vector2 scorePos = new Vector2(
-            GameConstants.RoomWidth / 2f - scoreSize.X / 2f,
-            GameConstants.RoomHeight / 2f - 110);
-
-        _spriteBatch.DrawString(_font, scoreText, scorePos, Color.White);
+        Vector2 scoreSize = _menuFont.MeasureString(scoreText);
 
         const string prompt = "Enter your name:";
-        Vector2 promptSize = _font.MeasureString(prompt);
-        Vector2 promptPos = new Vector2(
-            GameConstants.RoomWidth / 2f - promptSize.X / 2f,
-            GameConstants.RoomHeight / 2f - 60);
+        Vector2 promptSize = _menuFont.MeasureString(prompt);
 
-        _spriteBatch.DrawString(_font, prompt, promptPos, Color.White);
+        float lineSpacing = titleSize.Y + 16;
+        float startY = GameConstants.RoomHeight / 2f - 180;
+
+        Vector2 titlePos = new Vector2(GameConstants.RoomWidth / 2f - titleSize.X / 2f, startY);
+        Vector2 scorePos = new Vector2(GameConstants.RoomWidth / 2f - scoreSize.X / 2f, startY + lineSpacing);
+        Vector2 promptPos = new Vector2(GameConstants.RoomWidth / 2f - promptSize.X / 2f, startY + lineSpacing * 2);
+
+        _spriteBatch.DrawString(_menuFont, title, titlePos, Color.Gold);
+        _spriteBatch.DrawString(_menuFont, scoreText, scorePos, Color.White);
+        _spriteBatch.DrawString(_menuFont, prompt, promptPos, Color.White);
 
         const int boxWidth = 320;
-        const int boxHeight = 40;
+        const int boxHeight = 60;
         var boxRect = new Rectangle(
             (int)(GameConstants.RoomWidth / 2f - boxWidth / 2f),
-            (int)(GameConstants.RoomHeight / 2f - 20),
+            (int)(startY + lineSpacing * 3),
             boxWidth, boxHeight);
 
         const int borderThickness = 2;
@@ -1162,20 +1188,20 @@ public class Game1 : Game
         if (_showCursor)
             displayText += "|";
 
-        Vector2 textSize = _font.MeasureString(displayText);
+        Vector2 textSize = _menuFont.MeasureString(displayText);
         Vector2 textPos = new Vector2(
             boxRect.X + 10,
             boxRect.Y + boxRect.Height / 2f - textSize.Y / 2f);
 
-        _spriteBatch.DrawString(_font, displayText, textPos, Color.White);
+        _spriteBatch.DrawString(_menuFont, displayText, textPos, Color.White);
 
         const string confirmHint = "Press ENTER to confirm";
-        Vector2 hintSize = _font.MeasureString(confirmHint);
+        Vector2 hintSize = _menuFont.MeasureString(confirmHint);
         Vector2 hintPos = new Vector2(
             GameConstants.RoomWidth / 2f - hintSize.X / 2f,
-            GameConstants.RoomHeight / 2f + 60);
+            boxRect.Y + boxRect.Height + 24);
 
-        _spriteBatch.DrawString(_font, confirmHint, hintPos, Color.Gray);
+        _spriteBatch.DrawString(_menuFont, confirmHint, hintPos, Color.Gray);
     }
 
     private void DrawBackgroundOverlay(Texture2D backgroundImage)
