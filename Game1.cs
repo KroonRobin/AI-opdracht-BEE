@@ -90,6 +90,10 @@ public class Game1 : Game
     private Texture2D _healthPotionTexture;
     private Texture2D _fireRatePickupTexture;
 
+    private Texture2D _logoTexture;
+    private float _splashTimer;
+    private float _splashPostFadeTimer;
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -100,17 +104,22 @@ public class Game1 : Game
     protected override void Initialize()
     {
         Window.TextInput += OnTextInput;
+        Window.IsBorderless = true;
 
         var displayMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
         _graphics.PreferredBackBufferWidth = displayMode.Width;
         _graphics.PreferredBackBufferHeight = displayMode.Height;
-        _graphics.IsFullScreen = true;
+        _graphics.IsFullScreen = false;
         _graphics.ApplyChanges();
+
+        Window.Position = new Point(0, 0);
 
         _highScores = HighScoreManager.Load();
 
         ResetGame();
-        _gameState = GameState.MainMenu;
+        _gameState = GameState.Splash;
+        _splashTimer = 0f;
+        _splashPostFadeTimer = 0f;
 
         base.Initialize();
     }
@@ -119,6 +128,8 @@ public class Game1 : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _font = Content.Load<SpriteFont>("DefaultFont");
+
+        _logoTexture = Content.Load<Texture2D>("Sprites/logo_crowned_pigeon");
 
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
@@ -204,6 +215,10 @@ public class Game1 : Game
 
         switch (_gameState)
         {
+            case GameState.Splash:
+                UpdateSplash(gameTime);
+                break;
+
             case GameState.MainMenu:
                 UpdateMainMenu(currentKeyboardState, currentMouseState);
                 break;
@@ -379,6 +394,46 @@ public class Game1 : Game
                 _gameState = GameState.GameOver;
             }
         }
+    }
+
+    private void UpdateSplash(GameTime gameTime)
+    {
+        float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        delta = Math.Min(delta, 0.1f);
+
+        float totalFadeDuration = GameConstants.SplashFadeInDuration
+            + GameConstants.SplashHoldDuration
+            + GameConstants.SplashFadeOutDuration;
+
+        if (_splashTimer < totalFadeDuration || GetSplashAlpha() > 0f)
+        {
+            _splashTimer += delta;
+            return;
+        }
+
+        // Logo has fully faded out — now count the extra pause before moving on
+        _splashPostFadeTimer += delta;
+
+        if (_splashPostFadeTimer >= GameConstants.SplashPostFadeDelay)
+            _gameState = GameState.MainMenu;
+    }
+
+    private float GetSplashAlpha()
+    {
+        if (_splashTimer < GameConstants.SplashFadeInDuration)
+        {
+            return _splashTimer / GameConstants.SplashFadeInDuration;
+        }
+
+        float holdEnd = GameConstants.SplashFadeInDuration + GameConstants.SplashHoldDuration;
+        if (_splashTimer < holdEnd)
+        {
+            return 1f;
+        }
+
+        float totalDuration = holdEnd + GameConstants.SplashFadeOutDuration;
+        float fadeOutProgress = (_splashTimer - holdEnd) / GameConstants.SplashFadeOutDuration;
+        return MathHelper.Clamp(1f - fadeOutProgress, 0f, 1f);
     }
 
     private void UpdatePauseScreen(KeyboardState currentKeyboardState, MouseState currentMouseState)
@@ -759,6 +814,9 @@ public class Game1 : Game
 
         DrawHud();
 
+        if (_gameState == GameState.Splash)
+            DrawSplash();
+
         if (_gameState == GameState.MainMenu)
             DrawMainMenu();
 
@@ -850,6 +908,27 @@ public class Game1 : Game
             outerRect.Y + outerRect.Height / 2f - scoreSize.Y / 2f);
 
         _spriteBatch.DrawString(_font, scoreText, scorePosition, Color.White);
+    }
+
+    private void DrawSplash()
+    {
+        var backgroundRect = new Rectangle(0, 0, GameConstants.RoomWidth, GameConstants.RoomHeight);
+        var backgroundColor = new Color(245, 235, 210); // warm cream, tune to taste
+
+        _spriteBatch.Draw(_pixel, backgroundRect, backgroundColor);
+
+        float alpha = GetSplashAlpha();
+
+        int logoWidth = (int)(_logoTexture.Width * GameConstants.SplashLogoScale);
+        int logoHeight = (int)(_logoTexture.Height * GameConstants.SplashLogoScale);
+
+        var logoRect = new Rectangle(
+            GameConstants.RoomWidth / 2 - logoWidth / 2,
+            GameConstants.RoomHeight / 2 - logoHeight / 2,
+            logoWidth,
+            logoHeight);
+
+        _spriteBatch.Draw(_logoTexture, logoRect, Color.White * alpha);
     }
 
     private void DrawMainMenu()

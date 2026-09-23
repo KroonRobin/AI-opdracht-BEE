@@ -2,6 +2,13 @@ namespace AI_opdracht_BEE.Core;
 
 public static class GameConstants
 {
+    // Startup Logo parameters
+    public const float SplashFadeInDuration = 1f;
+    public const float SplashHoldDuration = 2f;
+    public const float SplashFadeOutDuration = 1f;
+    public const float SplashLogoScale = 0.5f;
+    public const float SplashPostFadeDelay = 0.5f;   // blank pause after the logo fully fades, before the menu appears
+
     // Room / window dimensions
     public const int RoomWidth = 1920;
     public const int RoomHeight = 1080;
