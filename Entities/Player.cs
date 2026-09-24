@@ -125,7 +125,11 @@ public class Player
     public Vector2 HitboxCenter => Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
     public float HitboxRadius => GameConstants.PlayerHitboxRadius;
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D frontTexture, Texture2D backTexture, Texture2D sideTexture, Texture2D pixel)
+    public void Draw(
+    SpriteBatch spriteBatch,
+    Texture2D frontTexture, Texture2D backTexture, Texture2D sideTexture,
+    Texture2D frontMeleeTexture, Texture2D backMeleeTexture, Texture2D sideMeleeTexture,
+    Texture2D pixel, bool isAttacking)
     {
         Texture2D texture;
         SpriteEffects effects = SpriteEffects.None;
@@ -133,20 +137,20 @@ public class Player
         switch (FacingDirection)
         {
             case Facing.Down:
-                texture = frontTexture;
+                texture = isAttacking ? frontMeleeTexture : frontTexture;
                 break;
 
             case Facing.Up:
-                texture = backTexture;
+                texture = isAttacking ? backMeleeTexture : backTexture;
                 break;
 
             case Facing.Left:
-                texture = sideTexture;
+                texture = isAttacking ? sideMeleeTexture : sideTexture;
                 effects = SpriteEffects.FlipHorizontally;
                 break;
 
             default: // Right
-                texture = sideTexture;
+                texture = isAttacking ? sideMeleeTexture : sideTexture;
                 break;
         }
 
@@ -162,11 +166,20 @@ public class Player
             return;
         }
 
-        var sourceRect = new Rectangle(
-            _currentFrame * GameConstants.PlayerSpriteFrameWidth,
-            0,
-            GameConstants.PlayerSpriteFrameWidth,
-            GameConstants.PlayerSpriteFrameHeight);
+        Rectangle sourceRect;
+
+        if (isAttacking)
+        {
+            sourceRect = new Rectangle(0, 0, texture.Width, texture.Height);
+        }
+        else
+        {
+            sourceRect = new Rectangle(
+                _currentFrame * GameConstants.PlayerSpriteFrameWidth,
+                0,
+                GameConstants.PlayerSpriteFrameWidth,
+                GameConstants.PlayerSpriteFrameHeight);
+        }
 
         var destRect = new Rectangle(
             (int)(Position.X - GameConstants.PlayerSpriteFrameWidth * GameConstants.PlayerSpriteScale / 2f),

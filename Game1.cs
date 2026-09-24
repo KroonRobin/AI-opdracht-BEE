@@ -84,6 +84,10 @@ public class Game1 : Game
     private Texture2D _playerBackTexture;
     private Texture2D _playerSideTexture;
 
+    private Texture2D _playerFrontMeleeTexture;
+    private Texture2D _playerBackMeleeTexture;
+    private Texture2D _playerSideMeleeTexture;
+
     private Texture2D _arrowTexture;
     private Texture2D _enemyOrbTexture;
     private Texture2D _swordTexture;
@@ -139,13 +143,17 @@ public class Game1 : Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
 
-        _arrowTexture = Content.Load<Texture2D>("Sprites/arrow");
-        _enemyOrbTexture = Content.Load<Texture2D>("Sprites/enemy_projectile");
-        _swordTexture = Content.Load<Texture2D>("Sprites/sword_melee");
-
         _playerFrontTexture = Content.Load<Texture2D>("Sprites/character_front");
         _playerBackTexture = Content.Load<Texture2D>("Sprites/character_back");
         _playerSideTexture = Content.Load<Texture2D>("Sprites/character_side");
+
+        _playerFrontMeleeTexture = Content.Load<Texture2D>("Sprites/character_melee_front");
+        _playerBackMeleeTexture = Content.Load<Texture2D>("Sprites/character_melee_back");
+        _playerSideMeleeTexture = Content.Load<Texture2D>("Sprites/character_melee_side");
+
+        _arrowTexture = Content.Load<Texture2D>("Sprites/arrow");
+        _enemyOrbTexture = Content.Load<Texture2D>("Sprites/enemy_projectile");
+        _swordTexture = Content.Load<Texture2D>("Sprites/sword_melee");
 
         _speedPickupTexture = Content.Load<Texture2D>("Sprites/speed_pwrup");
         _healthPotionTexture = Content.Load<Texture2D>("Sprites/health_potion");
@@ -845,14 +853,18 @@ public class Game1 : Game
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-        _player.Draw(_spriteBatch, _playerFrontTexture, _playerBackTexture, _playerSideTexture, _pixel);
-
         bool swordBehindPlayer = _meleeAttackVisual != null && _meleeAttackVisual.IsBehindPlayer;
 
         if (swordBehindPlayer)
             _meleeAttackVisual.Draw(_spriteBatch, _pixel);
 
-        _player.Draw(_spriteBatch, _playerFrontTexture, _playerBackTexture, _playerSideTexture, _pixel);
+        bool isAttacking = _meleeAttackVisual != null;
+
+        _player.Draw(
+            _spriteBatch,
+            _playerFrontTexture, _playerBackTexture, _playerSideTexture,
+            _playerFrontMeleeTexture, _playerBackMeleeTexture, _playerSideMeleeTexture,
+            _pixel, isAttacking);
 
         foreach (var bullet in _bullets)
             bullet.Draw(_spriteBatch, _pixel);
