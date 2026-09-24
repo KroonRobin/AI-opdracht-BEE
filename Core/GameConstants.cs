@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+
 namespace AI_opdracht_BEE.Core;
 
 public static class GameConstants
@@ -28,11 +30,17 @@ public static class GameConstants
     public const float PlayerAnimationFrameDuration = 0.2f;
 
     // Melee attack
-    public const float MeleeAttackRadius = 60f;
+    public const float MeleeAttackRadius = 90f;
     public const float MeleeAttackArcDegrees = 90f;   // quarter circle
     public const float MeleeAttackDuration = 0.25f;   // animation length
     public const float MeleeAttackCooldown = 0.35f;   // slightly longer than the animation, so swings can't overlap
     public const int MeleeAttackDotSize = 8;
+
+    public const float SwordVisualScale = 1.5f;   // tune until the blade roughly reaches the attack radius
+    public static readonly float SwordRotationOffset = MathHelper.ToRadians(-45f);   // guess based on hilt at bottom-left — tune if the blade points the wrong way
+    public const float SwordSideLift = 18f;   // extra pixels the sword rises above chest-height when facing sideways — tune this
+    public const float SwordHandOffsetX = 0f;                // was 8f — pulled closer to center
+    public const float SwordHandOffsetY = -4f;
 
     // Bullet
     public const float BulletSpeed = 800f;

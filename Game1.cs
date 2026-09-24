@@ -86,10 +86,13 @@ public class Game1 : Game
 
     private Texture2D _arrowTexture;
     private Texture2D _enemyOrbTexture;
+    private Texture2D _swordTexture;
 
     private Texture2D _speedPickupTexture;
     private Texture2D _healthPotionTexture;
     private Texture2D _fireRatePickupTexture;
+    private Texture2D _damagePickupTexture;
+    private Texture2D _healthIncreasePickupTexture;
 
     private Texture2D _logoTexture;
     private float _splashTimer;
@@ -138,6 +141,7 @@ public class Game1 : Game
 
         _arrowTexture = Content.Load<Texture2D>("Sprites/arrow");
         _enemyOrbTexture = Content.Load<Texture2D>("Sprites/enemy_projectile");
+        _swordTexture = Content.Load<Texture2D>("Sprites/sword_melee");
 
         _playerFrontTexture = Content.Load<Texture2D>("Sprites/character_front");
         _playerBackTexture = Content.Load<Texture2D>("Sprites/character_back");
@@ -146,6 +150,8 @@ public class Game1 : Game
         _speedPickupTexture = Content.Load<Texture2D>("Sprites/speed_pwrup");
         _healthPotionTexture = Content.Load<Texture2D>("Sprites/health_potion");
         _fireRatePickupTexture = Content.Load<Texture2D>("Sprites/firerate_pwrup");
+        _damagePickupTexture = Content.Load<Texture2D>("Sprites/damage_pwrup");
+        _healthIncreasePickupTexture = Content.Load<Texture2D>("Sprites/health_increase");
 
         _renderTarget = new RenderTarget2D(GraphicsDevice, GameConstants.RoomWidth, GameConstants.RoomHeight);
 
@@ -307,6 +313,8 @@ public class Game1 : Game
 
         if (_meleeAttackVisual != null)
         {
+            _meleeAttackVisual.FollowPlayer(GetMeleeAttackOrigin(), _player.Position);
+
             var meleeDeaths = _meleeAttackVisual.Update(gameTime, _enemies);
 
             foreach (var death in meleeDeaths)
@@ -716,6 +724,8 @@ public class Game1 : Game
             UpgradeType.MoveSpeed => _speedPickupTexture,
             UpgradeType.Heal => _healthPotionTexture,
             UpgradeType.FireRate => _fireRatePickupTexture,
+            UpgradeType.Damage => _damagePickupTexture,
+            UpgradeType.MaxHealth => _healthIncreasePickupTexture,
             _ => null
         };
 
@@ -725,7 +735,8 @@ public class Game1 : Game
 
     private void TriggerMeleeAttack()
     {
-        Vector2 attackOrigin = _player.Position - new Vector2(0, GameConstants.PlayerHeight / 2f);
+        Vector2 attackOrigin = GetMeleeAttackOrigin();
+
         Vector2 aimDirection = _virtualMousePosition - attackOrigin;
 
         if (aimDirection == Vector2.Zero)
@@ -737,7 +748,30 @@ public class Game1 : Game
 
         _meleeAttackVisual = new MeleeAttackVisual(
             attackOrigin, centerAngle, halfArc, GameConstants.MeleeAttackRadius,
-            _currentBulletDamage, _player.Position);
+            _currentBulletDamage, _player.Position,
+            renderBehindPlayer: _player.FacingDirection == Facing.Up,
+            _swordTexture, GameConstants.SwordVisualScale, GameConstants.SwordRotationOffset);
+    }
+
+    private Vector2 GetMeleeAttackOrigin()
+    {
+        bool facingSide = _player.FacingDirection == Facing.Left || _player.FacingDirection == Facing.Right;
+
+        float baselineOffset = GameConstants.PlayerHeight / 2f;
+        float verticalOffset = facingSide ? baselineOffset + GameConstants.SwordSideLift : baselineOffset;
+
+        Vector2 origin = _player.Position - new Vector2(0, verticalOffset);
+
+        float handOffsetX = _player.FacingDirection switch
+        {
+            Facing.Right => GameConstants.SwordHandOffsetX,
+            Facing.Left => -GameConstants.SwordHandOffsetX,
+            _ => 0f
+        };
+
+        origin += new Vector2(handOffsetX, GameConstants.SwordHandOffsetY);
+
+        return origin;
     }
 
     private float SnapAngleToCompass(float angle)
@@ -813,6 +847,13 @@ public class Game1 : Game
 
         _player.Draw(_spriteBatch, _playerFrontTexture, _playerBackTexture, _playerSideTexture, _pixel);
 
+        bool swordBehindPlayer = _meleeAttackVisual != null && _meleeAttackVisual.IsBehindPlayer;
+
+        if (swordBehindPlayer)
+            _meleeAttackVisual.Draw(_spriteBatch, _pixel);
+
+        _player.Draw(_spriteBatch, _playerFrontTexture, _playerBackTexture, _playerSideTexture, _pixel);
+
         foreach (var bullet in _bullets)
             bullet.Draw(_spriteBatch, _pixel);
 
@@ -822,7 +863,8 @@ public class Game1 : Game
         foreach (var enemy in _enemies)
             enemy.Draw(_spriteBatch, _pixel);
 
-        _meleeAttackVisual?.Draw(_spriteBatch, _pixel);
+        if (!swordBehindPlayer)
+            _meleeAttackVisual?.Draw(_spriteBatch, _pixel);
 
         foreach (var pickup in _pickups)
             pickup.Draw(_spriteBatch, _pixel, _font);
